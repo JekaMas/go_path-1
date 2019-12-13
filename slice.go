@@ -5,50 +5,50 @@ import (
 	"sort"
 )
 
-/* 1. Добавить к каждому элементу единицу */
+// 1. Добавить к каждому элементу единицу
 func AddOne(slice []int) []int {
 	for i := 0; i < len(slice); i++ {
-		slice[i] += 1
+		slice[i]++ // jekamas: можно использовать инкримент
 	}
 	return slice
 }
 
-/* 2. Добавить в конец число 5 */
+// 2. Добавить в конец число 5
 func AppendFive(slice []int) []int {
 	return append(slice, 5)
 }
 
-/* 3. Добавить в начало число 5 */
+// 3. Добавить в начало число 5
 func PrependFive(slice []int) []int {
 	return append([]int{5}, slice...)
 }
 
-/* 4. Взять и удалить последний элемент */
+// 4. Взять и удалить последний элемент
 func PopLast(slice []int) (int, []int) {
 	last := slice[len(slice)-1]
 	return last, slice[:len(slice)-1]
 }
 
-/* 5. Взять и удалить первый элемент */
+// 5. Взять и удалить первый элемент */
 func Pop(slice []int) (int, []int) {
 	first := slice[0]
 	return first, slice[1:]
 }
 
-/* 6. Взять i-й элемент и удалить */
+// 6. Взять i-й элемент и удалить */
 func PopIndex(slice []int, i int) (int, []int) {
 	element := slice[i]
 	copy(slice[i:], slice[i+1:len(slice)-1])
 	return element, slice
 }
 
-/* 7. Объединить 2 слайса */
+// 7. Объединить 2 слайса
 func Concat(slice1, slice2 []int) []int {
 	return append(slice1, slice2...)
 }
 
-/* 8. Удалить все элементы, которые есть во втором */
-/* O(m*n) реализация */
+// 8. Удалить все элементы, которые есть во втором
+// O((m)*n) реализация
 func RemoveAll(slice, remove []int) (result []int) {
 	for _, v := range slice {
 		has := false // flag
@@ -64,17 +64,38 @@ func RemoveAll(slice, remove []int) (result []int) {
 	return
 }
 
-/* 9. Сдвинуть все элементы на 1 влево */
+// 8. in-place realization
+func RemoveAllAlternative(slice, remove []int) []int {
+	sort.Ints(remove) // because we're going to do N searches, let's presort the slice. It'll decrease the complexity from O(n*m) to O(m*log(m) + n*log(m))
+
+	n := len(slice)
+	var v int
+	for i := 0; i < n; i++ {
+		v = slice[i]
+
+		if index := sort.SearchInts(remove, v); index < len(remove) && remove[index] == v {
+			slice[i] = slice[len(slice)-1] // remove in-place
+			slice = slice[:len(slice)-1]   // remove in-place
+
+			i--
+			n--
+		}
+	}
+
+	return slice
+}
+
+// 9. Сдвинуть все элементы на 1 влево
 func OffsetLeftOne(slice []int) []int {
 	first := slice[0]
-	for i := 0; i < len(slice)-1; i++ {
-		slice[i] = slice[i+1]
-	}
+	copy(slice, slice[1:])
 	slice[len(slice)-1] = first
 	return slice
 }
 
-/* 10. Сдвинуть все элементы на некоторое i влево */
+// 10. Сдвинуть все элементы на некоторое i влево
+// jeksmas: а сможешь in-place реализацию? без создания нового массива
+// с реализацией всё хорошо. я бы такой код принял и в прод. Что можно улучшить? offset = offset%len(slice) - вдруг дадут большое значение. и можно копировать не по одному элементу, а через copy
 func OffsetLeft(slice []int, offset int) []int {
 	var result = make([]int, len(slice))
 	for i := 0; i < len(slice); i++ {
@@ -87,7 +108,20 @@ func OffsetLeft(slice []int, offset int) []int {
 	return result
 }
 
-/* 11. Сдвинуть все элементы на 1 вправо */
+func OffsetLeft(slice []int, offset int) []int {
+	var result = make([]int, len(slice))
+
+	splitIndex := offset
+	rightSide := slice[splitIndex:]
+	leftSide := slice[:splitIndex]
+
+	copy(result, rightSide)
+	copy(result[len(rightSide):], leftSide)
+
+	return result
+}
+
+// 11. Сдвинуть все элементы на 1 вправо
 func OffsetRightOne(slice []int) []int {
 	last := slice[len(slice)-1]
 	for i := len(slice) - 1; i > 0; i-- {
@@ -97,7 +131,16 @@ func OffsetRightOne(slice []int) []int {
 	return slice
 }
 
-/* 12. Сдвинуть все элементы на некоторое i вправо */
+// jekamas: OffsetRight, OffsetRightOne лучше реализовать через то, что уже сделано
+func OffsetRight(slice []int, offset int) []int {
+	return OffsetLeft(slice, len(slice)-offset)
+}
+
+func OffsetRightOne(slice []int) []int {
+	return OffsetRight(slice, 1)
+}
+
+// 12. Сдвинуть все элементы на некоторое i вправо
 func OffsetRight(slice []int, offset int) []int {
 	var result = make([]int, len(slice))
 	for i := 0; i < len(slice); i++ {
@@ -106,7 +149,8 @@ func OffsetRight(slice []int, offset int) []int {
 	return result
 }
 
-/* 13. Копия слайса */
+// 13. Копия слайса
+// jekamas: все хорошо. больше решений https://github.com/golang/go/wiki/SliceTricks#copy
 func Copy(slice []int) (sliceCopy []int) {
 	sliceCopy = make([]int, len(slice))
 	copy(sliceCopy, slice)
@@ -121,13 +165,23 @@ func EvenOddSwap(slice []int) []int {
 	return slice
 }
 
-/* 15. Упорядочить слайс */
+// 15. Упорядочить слайс
+// jekamas: всё хорошо. можно избавиться от else
 func Sort(slice []int, reversed bool) []int {
 	if reversed {
 		sort.Sort(sort.Reverse(sort.IntSlice(slice)))
 	} else {
 		sort.Ints(slice)
 	}
+	return slice
+}
+
+func Sort(slice []int, reversed bool) []int {
+	var toSort sort.Interface = sort.IntSlice(slice)
+	if reversed {
+		toSort = sort.Reverse(toSort)
+	}
+	sort.Sort(toSort)
 	return slice
 }
 
