@@ -108,7 +108,7 @@ func OffsetLeft(slice []int, offset int) []int {
 	return result
 }
 
-func OffsetLeft(slice []int, offset int) []int {
+func OffsetLeftAlternative(slice []int, offset int) []int {
 	var result = make([]int, len(slice))
 
 	splitIndex := offset
@@ -136,12 +136,12 @@ func OffsetRight(slice []int, offset int) []int {
 	return OffsetLeft(slice, len(slice)-offset)
 }
 
-func OffsetRightOne(slice []int) []int {
+func OffsetRightOneAlternative(slice []int) []int {
 	return OffsetRight(slice, 1)
 }
 
 // 12. Сдвинуть все элементы на некоторое i вправо
-func OffsetRight(slice []int, offset int) []int {
+func OffsetRightAlternative(slice []int, offset int) []int {
 	var result = make([]int, len(slice))
 	for i := 0; i < len(slice); i++ {
 		result[(i+offset)%len(slice)] = slice[i]
@@ -176,7 +176,7 @@ func Sort(slice []int, reversed bool) []int {
 	return slice
 }
 
-func Sort(slice []int, reversed bool) []int {
+func SortAlternative(slice []int, reversed bool) []int {
 	var toSort sort.Interface = sort.IntSlice(slice)
 	if reversed {
 		toSort = sort.Reverse(toSort)
