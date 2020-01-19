@@ -66,7 +66,7 @@ func OrderPriceCached(order map[string]int) int { // map[name]count
 /* --- User --------------------------------------------------------------------------------------------------------- */
 
 func AddUser(userName string, amount int) error {
-	_, ok := prices[userName]
+	_, ok := users[userName]
 	if ok {
 		return errors.New("user already exists")
 	}
