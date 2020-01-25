@@ -3,6 +3,7 @@ package shop
 import (
 	"encoding/xml"
 	"errors"
+	"math"
 	"sort"
 	"strings"
 )
@@ -56,6 +57,9 @@ func (m *Market) ModifyProduct(p Product) error {
 	if _, ok := m.Products[p.Name]; !ok {
 		return errors.New("cannot modify nil product")
 	}
+	if !m.checkProduct(p) {
+		return errors.New("invalid product check")
+	}
 
 	m.Products[p.Name] = &p
 	return nil
@@ -69,6 +73,11 @@ func (m *Market) RemoveProduct(name string) error {
 
 	delete(m.Products, name)
 	return nil
+}
+
+func (m *Market) checkProduct(p Product) bool {
+	return p.Price >= 0 && len(p.Name) > 0 && // FIXME check product type
+		(p.Type == ProductSampled || p.Type == ProductPremium || p.Type == ProductNormal)
 }
 
 /* -- AccountManager ------------------------------------------------------------------------------------------------ */
@@ -131,10 +140,14 @@ func (m *Market) Balance(username string) (float32, error) {
 	return m.Accounts[username].Balance, nil
 }
 
-func (m *Market) GetAccounts(sortType AccountSortType) []*Account {
-	var accs []*Account
+func (m *Market) GetAccount(name string) Account {
+	return *m.Accounts[name]
+}
+
+func (m *Market) GetAccounts(sortType AccountSortType) []Account {
+	var accs []Account
 	for _, acc := range m.Accounts {
-		accs = append(accs, acc)
+		accs = append(accs, *acc)
 	}
 	// compare function
 	var less func(i, j int) bool
@@ -144,15 +157,15 @@ func (m *Market) GetAccounts(sortType AccountSortType) []*Account {
 		fallthrough
 	case SortByName:
 		less = func(i, j int) bool {
-			return strings.Compare(accs[i].Name, accs[j].Name) > 0
+			return strings.Compare(accs[i].Name, accs[j].Name) < 0
 		}
 	case SortByNameReverse:
 		less = func(i, j int) bool {
-			return strings.Compare(accs[i].Name, accs[j].Name) < 0
+			return strings.Compare(accs[i].Name, accs[j].Name) > 0
 		}
 	case SortByBalance:
 		less = func(i, j int) bool {
-			return accs[i].Balance > accs[j].Balance
+			return accs[i].Balance < accs[j].Balance
 		}
 	}
 
@@ -162,10 +175,18 @@ func (m *Market) GetAccounts(sortType AccountSortType) []*Account {
 
 /* -- OrderManager -------------------------------------------------------------------------------------------------- */
 
+func NewOrder(products []Product, bundles []Bundle, account Account) Order {
+	return Order{
+		Products: products,
+		Bundles:  bundles,
+		Account:  account,
+	}
+}
+
 func (m *Market) CalculateOrder(order Order) (float32, error) {
 
 	if order.Products == nil {
-		return 0, errors.New("no products in the order")
+		return 0, errors.New("products in the order is nil")
 	}
 
 	account := order.Account
@@ -180,6 +201,12 @@ func (m *Market) CalculateOrder(order Order) (float32, error) {
 	// bundles
 	bundlesPrice := float32(0)
 	for _, bundle := range order.Bundles {
+
+		abs := math.Abs(float64(bundle.Discount))
+		if abs < 1 || abs > 99 {
+			return 0, ErrorInvalidDiscount
+		}
+
 		price := bundle.Main.Price
 		for _, product := range bundle.Additional {
 			price += product.Price
@@ -223,7 +250,8 @@ func NewBundle(main Product, discount float32, additional ...Product) Bundle {
 
 func (m *Market) AddBundle(name string, main Product, discount float32, additional ...Product) error {
 
-	if discount < 1 || discount > 99 {
+	abs := math.Abs(float64(discount))
+	if abs < 1 || abs > 99 {
 		return ErrorInvalidDiscount
 	}
 
@@ -238,16 +266,16 @@ func (m *Market) AddBundle(name string, main Product, discount float32, addition
 
 func (m *Market) ChangeDiscount(name string, discount float32) error {
 
-	if discount < 1 || discount > 99 {
+	abs := math.Abs(float64(discount))
+	if abs < 1 || abs > 99 {
 		return ErrorInvalidDiscount
 	}
 
-	if _, ok := m.Bundles[name]; ok {
+	if _, ok := m.Bundles[name]; !ok {
 		return ErrorBundleNotExists
 	}
 
-	bundle := m.Bundles[name]
-	bundle.Discount = discount
+	m.Bundles[name].Discount = discount
 	return nil
 }
 

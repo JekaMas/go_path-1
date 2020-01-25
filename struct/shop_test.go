@@ -52,33 +52,36 @@ func TestShop_AddProduct(t *testing.T) {
 	}
 }
 
-// TODO
 func TestShop_ModifyProduct(t *testing.T) {
-	type fields struct {
-		Accounts map[string]*Account
-		Products map[string]*Product
-		Bundles  map[string]*Bundle
-	}
-	type args struct {
-		p Product
-	}
-	tests := []struct {
+
+	type test struct {
 		name    string
-		fields  fields
-		args    args
+		product Product
 		wantErr bool
-	}{
-		// TODO: Add test cases.
 	}
+
+	m := NewMarket()
+	_ = m.AddProduct(Product{Name: "P1", Price: 100, Type: ProductNormal})
+
+	tests := []test{
+		{"default", Product{"P1", 120, ProductNormal}, false},
+		{"default", Product{"P1", 24.435, ProductPremium}, false},
+
+		{"negative", Product{"P1", -100, ProductNormal}, true},
+		{"nil", Product{"P2", 100, ProductNormal}, true},
+		{"nil2", Product{}, true},
+		{"type", Product{"P1", 100, 42}, true},
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := Market{
-				Accounts: tt.fields.Accounts,
-				Products: tt.fields.Products,
-				Bundles:  tt.fields.Bundles,
-			}
-			if err := m.ModifyProduct(tt.args.p); (err != nil) != tt.wantErr {
+			if err := m.ModifyProduct(tt.product); (err != nil) != tt.wantErr {
 				t.Errorf("ModifyProduct() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if product := m.Products["P1"]; !tt.wantErr && reflect.DeepEqual(product, tt.product) {
+				t.Errorf("ModifyProduct() product = %v, want %v",
+					product, tt.product)
 			}
 		})
 	}
@@ -208,33 +211,59 @@ func TestShop_AddBalance(t *testing.T) {
 	}
 }
 
-// TODO
 func TestShop_GetAccounts(t *testing.T) {
-	type fields struct {
-		Accounts map[string]*Account
-		Products map[string]*Product
-		Bundles  map[string]*Bundle
-	}
-	type args struct {
+
+	type test struct {
+		name     string
 		sortType AccountSortType
+		result   []Account
 	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   []Account
-	}{
-		// TODO: Add test cases.
+
+	m := NewMarket()
+
+	// init
+	_ = m.Register("John")
+	_ = m.Register("Tom")
+	_ = m.Register("Stan")
+
+	_ = m.AddBalance("John", 3)
+	_ = m.AddBalance("Tom", 1)
+	_ = m.AddBalance("Stan", 2)
+
+	var nt = AccountNormal // normal type
+	names := []Account{{"John", 3, nt}, {"Stan", 2, nt}, {"Tom", 1, nt}}
+	rever := []Account{{"Tom", 1, nt}, {"Stan", 2, nt}, {"John", 3, nt}}
+	balan := []Account{{"Tom", 1, nt}, {"Stan", 2, nt}, {"John", 3, nt}}
+
+	tests := []test{
+		{"userName", SortByName, names},
+		{"userReverse", SortByNameReverse, rever},
+		{"balance", SortByBalance, balan},
+		{"err", 100, names},
 	}
+
+	// test
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := Market{
-				Accounts: tt.fields.Accounts,
-				Products: tt.fields.Products,
-				Bundles:  tt.fields.Bundles,
+			a := m.GetAccounts(tt.sortType)
+			// spew.Dump(a)
+			if !reflect.DeepEqual(a, tt.result) {
+				t.Errorf("GetAccounts() sort not working properly, want = %v get = %v",
+					tt.result, a)
 			}
-			if got := m.GetAccounts(tt.args.sortType); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetAccounts() = %v, want %v", got, tt.want)
+		})
+	}
+
+	// empty test
+	m = NewMarket()
+	var empty []Account
+
+	for _, tt := range tests {
+		t.Run("empty", func(t *testing.T) {
+			a := m.GetAccounts(tt.sortType)
+			if !reflect.DeepEqual(a, empty) {
+				t.Errorf("GetAccounts() sort not working properly, want = %v get = %v",
+					[]Account{}, a)
 			}
 		})
 	}
@@ -242,144 +271,268 @@ func TestShop_GetAccounts(t *testing.T) {
 
 /* -- OrderManager -------------------------------------------------------------------------------------------------- */
 
-// TODO
 func TestShop_CalculateOrder(t *testing.T) {
-	type fields struct {
-		Accounts map[string]*Account
-		Products map[string]*Product
-		Bundles  map[string]*Bundle
-	}
-	type args struct {
-		order Order
-	}
-	tests := []struct {
+
+	type test struct {
 		name    string
-		fields  fields
-		args    args
-		want    float32
+		order   Order
+		wantSum float32
 		wantErr bool
-	}{
-		// TODO: Add test cases.
 	}
+
+	nt := ProductNormal  // normal type
+	pt := ProductPremium // premium type
+
+	acc := Account{"A", 0, AccountNormal}
+	premAcc := Account{"B", 0, AccountPremium}
+
+	tests := []test{
+		{"one",
+			NewOrder([]Product{NewProduct("P", 90, nt)}, nil, acc),
+			90, false,
+		},
+		{"two",
+			NewOrder([]Product{NewProduct("P1", 90, nt), NewProduct("P2", 10, nt)}, nil, acc),
+			100, false,
+		},
+		{"premProduct",
+			NewOrder([]Product{NewProduct("P1", 90, pt), NewProduct("P2", 10, nt)}, nil, acc),
+			95.5, false,
+		},
+		{"premProduct2",
+			NewOrder([]Product{NewProduct("P1", 90, pt), NewProduct("P2", 10, pt)}, nil, acc),
+			95, false,
+		},
+		{"premUserProduct",
+			NewOrder([]Product{NewProduct("P1", 90, pt), NewProduct("P2", 10, nt)}, nil, premAcc),
+			87, false,
+		},
+		{"premUserProduct",
+			NewOrder([]Product{NewProduct("P1", 90, pt), NewProduct("P2", 10, pt)}, nil, premAcc),
+			80, false,
+		},
+		{"bundle",
+			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, nt), 0, NewProduct("P2", 90, nt))}, acc),
+			100, false,
+		},
+		{"bundle2",
+			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, nt), -10, NewProduct("P2", 90, nt))}, acc),
+			90, false,
+		},
+		{"premBundle",
+			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 100, pt), -10, NewProduct("P2", 91, nt))}, acc),
+			171.9, false,
+		},
+		{"premBundle2",
+			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 100, pt), -10, NewProduct("P2", 91, pt))}, acc),
+			171.9, false,
+		},
+		{"premBundle3",
+			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 100, pt), -10, NewProduct("P2", 91, pt))}, premAcc),
+			171.9, false,
+		},
+		{"zeroBundle",
+			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, nt), -100, NewProduct("P2", 90, nt))}, acc),
+			0, false,
+		},
+		{"errBundle",
+			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, nt), -120, NewProduct("P2", 90, nt))}, acc),
+			0, true,
+		},
+		{"zero",
+			NewOrder([]Product{}, []Bundle{}, acc),
+			0, false,
+		},
+		{"zero2",
+			NewOrder([]Product{}, nil, acc),
+			0, false,
+		},
+		{"err",
+			NewOrder(nil, nil, acc),
+			0, true,
+		},
+		{"err",
+			NewOrder(nil, []Bundle{}, acc),
+			0, true,
+		},
+	}
+
+	m := testMarket()
+
+	// test
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := Market{
-				Accounts: tt.fields.Accounts,
-				Products: tt.fields.Products,
-				Bundles:  tt.fields.Bundles,
-			}
-			got, err := m.CalculateOrder(tt.args.order)
+			sum, err := m.CalculateOrder(tt.order)
+
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CalculateOrder() error = %v, wantErr %v", err, tt.wantErr)
-				return
 			}
-			if got != tt.want {
-				t.Errorf("CalculateOrder() got = %v, want %v", got, tt.want)
+
+			if !tt.wantErr && !reflect.DeepEqual(tt.wantSum, sum) {
+				t.Errorf("CalculateOrder() wrong sum, want = %v get = %v",
+					tt.wantSum, sum)
 			}
 		})
 	}
 }
 
-// TODO
 func TestShop_PlaceOrder(t *testing.T) {
-	type fields struct {
-		Accounts map[string]*Account
-		Products map[string]*Product
-		Bundles  map[string]*Bundle
+
+	type test struct {
+		name        string
+		acc         Account
+		order       Order
+		wantBalance float32
+		wantErr     bool
 	}
-	type args struct {
-		username string
-		order    Order
+
+	acc := Account{"A", 10_000, AccountNormal}
+
+	tests := []test{
+		{"default", acc,
+			NewOrder([]Product{NewProduct("P", 90, ProductNormal)}, nil, acc),
+			10_000 - 90, false,
+		},
+		{"default2", acc,
+			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, ProductNormal), -10)}, acc),
+			10_000 - 9, false,
+		},
+		{"default3", acc,
+			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, ProductNormal), -10, NewProduct("P2", 90, ProductNormal))}, acc),
+			10_000 - 90, false,
+		},
+		{"zero", acc,
+			NewOrder([]Product{NewProduct("P", 0, ProductNormal)}, nil, acc),
+			10_000, false,
+		},
+		{"zero2", acc,
+			NewOrder([]Product{}, nil, acc),
+			10_000, false,
+		},
+		{"zero3", acc,
+			NewOrder([]Product{}, nil, acc),
+			10_000, false,
+		},
+		{"much", acc,
+			NewOrder([]Product{NewProduct("P", 10_001, ProductNormal)}, nil, acc),
+			0, true,
+		},
 	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
+
+	// test
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := Market{
-				Accounts: tt.fields.Accounts,
-				Products: tt.fields.Products,
-				Bundles:  tt.fields.Bundles,
-			}
-			if err := m.PlaceOrder(tt.args.username, tt.args.order); (err != nil) != tt.wantErr {
+			m := testMarket()
+			_ = m.Register(tt.acc.Name)
+			_ = m.AddBalance(tt.acc.Name, tt.acc.Balance)
+
+			err := m.PlaceOrder(tt.acc.Name, tt.order)
+
+			if (err != nil) != tt.wantErr {
 				t.Errorf("PlaceOrder() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if !tt.wantErr && !reflect.DeepEqual(m.GetAccount(tt.acc.Name).Balance, tt.wantBalance) {
+				t.Errorf("PlaceOrder() wrong balance, want = %v get = %v",
+					tt.wantBalance, m.GetAccount(tt.acc.Name).Balance)
 			}
 		})
 	}
+
 }
 
 /* -- BundleManager ------------------------------------------------------------------------------------------------- */
 
-// TODO
 func TestShop_AddBundle(t *testing.T) {
-	type fields struct {
-		Accounts map[string]*Account
-		Products map[string]*Product
-		Bundles  map[string]*Bundle
-	}
-	type args struct {
-		name       string
-		main       Product
-		discount   float32
-		additional []Product
-	}
-	tests := []struct {
+
+	type test struct {
 		name    string
-		fields  fields
-		args    args
+		bundle  Bundle
 		wantErr bool
-	}{
-		// TODO: Add test cases.
 	}
+
+	nt := ProductNormal  // normal type
+	pt := ProductPremium // premium type
+
+	tests := []test{
+		{"default", NewBundle(NewProduct("P1", 10, nt), 1, NewProduct("P2", 90, nt)), false},
+		{"default2", NewBundle(NewProduct("P1", 10, nt), -10, NewProduct("P2", 90, nt)), false},
+		{"default3", NewBundle(NewProduct("P1", 10, nt), -55.2345, NewProduct("P2", 90, nt)), false},
+		{"default4", NewBundle(NewProduct("P1", 10, nt), 76.546767, NewProduct("P2", 90, nt)), false},
+
+		{"errDisc", NewBundle(NewProduct("P1", 10, nt), 0, NewProduct("P2", 90, nt)), true},
+		{"errDisc2", NewBundle(NewProduct("P1", 10, nt), 100, NewProduct("P2", 90, nt)), true},
+		{"errDisc3", NewBundle(NewProduct("P1", 10, nt), 101, NewProduct("P2", 90, nt)), true},
+		{"errDisc4", NewBundle(NewProduct("P1", 10, nt), 99.12456, NewProduct("P2", 90, nt)), true},
+		{"errDisc5", NewBundle(NewProduct("P1", 10, nt), 99.00001, NewProduct("P2", 90, nt)), true},
+		{"errDisc6", NewBundle(NewProduct("P1", 10, nt), 200, NewProduct("P2", 90, nt)), true},
+
+		{"nilProd", NewBundle(Product{}, 0, NewProduct("P2", 90, nt)), true},
+		{"nilProd2", NewBundle(NewProduct("P1", 10, nt), 0, Product{}), true},
+		{"nilProd3", NewBundle(NewProduct("P1", 10, nt), 0, NewProduct("P2", 90, nt), Product{}), true},
+		{"nilProd4", NewBundle(NewProduct("P1", 10, nt), 0, Product{}, NewProduct("P2", 90, nt)), true},
+		{"nilProd5", NewBundle(Product{}, 0, NewProduct("P2", 90, nt), Product{}), true},
+		// prem
+		{"defaultPrem", NewBundle(NewProduct("P1", 10, nt), 1, NewProduct("P2", 90, pt)), false},
+		{"errDiscPrem2", NewBundle(NewProduct("P1", 10, pt), 200, NewProduct("P2", 90, nt)), true},
+		{"nilProdPrem3", NewBundle(Product{}, 0, NewProduct("P2", 90, pt), Product{}), true},
+	}
+
+	// test
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := Market{
-				Accounts: tt.fields.Accounts,
-				Products: tt.fields.Products,
-				Bundles:  tt.fields.Bundles,
-			}
-			if err := m.AddBundle(tt.args.name, tt.args.main, tt.args.discount, tt.args.additional...); (err != nil) != tt.wantErr {
+			m := NewMarket()
+			err := m.AddBundle(tt.name, tt.bundle.Main, tt.bundle.Discount, tt.bundle.Additional...)
+
+			if (err != nil) != tt.wantErr {
 				t.Errorf("AddBundle() error = %v, wantErr %v", err, tt.wantErr)
 			}
+
+			if !tt.wantErr && !reflect.DeepEqual(tt.bundle, *m.Bundles[tt.name]) {
+				t.Errorf("AddBundle() wrong bundle added = %v get = %v",
+					tt.bundle, m.Bundles[tt.name])
+			}
 		})
 	}
+
 }
 
-// TODO
 func TestShop_ChangeDiscount(t *testing.T) {
-	type fields struct {
-		Accounts map[string]*Account
-		Products map[string]*Product
-		Bundles  map[string]*Bundle
-	}
-	type args struct {
+	type test struct {
 		name     string
 		discount float32
+		wantErr  bool
 	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
+
+	m := NewMarket()
+	_ = m.AddBundle("default", NewProduct("P1", 10, ProductNormal), 1, NewProduct("P2", 90, ProductPremium))
+
+	tests := []test{
+		{"default", 2, false},
+		{"default1", -2, false},
+		{"default2", 50, false},
+		{"err", 150, true},
+		{"err2", 0, true},
+		{"err2", 100, true},
+		{"err2", 100.0001, true},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := Market{
-				Accounts: tt.fields.Accounts,
-				Products: tt.fields.Products,
-				Bundles:  tt.fields.Bundles,
-			}
-			if err := m.ChangeDiscount(tt.args.name, tt.args.discount); (err != nil) != tt.wantErr {
+			if err := m.ChangeDiscount("default", tt.discount); (err != nil) != tt.wantErr {
 				t.Errorf("ChangeDiscount() error = %v, wantErr %v", err, tt.wantErr)
 			}
+
+			if discount := m.Bundles["default"].Discount; !tt.wantErr && discount != tt.discount {
+				t.Errorf("ChangeDiscount() discount = %v, want %v",
+					discount, tt.discount)
+			}
 		})
+	}
+
+	// nil
+	if err := m.ChangeDiscount("aaa", 10); err == nil {
+		t.Errorf("ChangeDiscount() modified nil bundle")
 	}
 }
 
@@ -485,28 +638,28 @@ func TestShop_Import(t *testing.T) {
 
 /* --- new ---------------------------------------------------------------------------------------------------------- */
 
-func newMarket() Market {
+func testMarket() Market {
 
 	m := NewMarket()
 
-	for _, acc := range newAccounts() {
+	for _, acc := range testAccounts() {
 		_ = m.Register(acc.Name)
 		_ = m.AddBalance(acc.Name, acc.Balance)
 		_ = m.ModifyAccountType(acc.Name, acc.Type)
 	}
 
-	for _, p := range newProducts() {
+	for _, p := range testProducts() {
 		_ = m.AddProduct(p)
 	}
 
-	for _, b := range newBundles() {
+	for _, b := range testBundles() {
 		_ = m.AddBundle(b.Main.Name, b.Main, b.Discount, b.Additional...)
 	}
 
 	return m
 }
 
-func newAccounts() []Account {
+func testAccounts() []Account {
 	return []Account{
 		{
 			Name:    "Sofia",
@@ -541,7 +694,7 @@ func newAccounts() []Account {
 	}
 }
 
-func newProducts() []Product {
+func testProducts() []Product {
 	return []Product{
 		{
 			Name:  "Mouse",
@@ -581,7 +734,7 @@ func newProducts() []Product {
 	}
 }
 
-func newBundles() []Bundle {
+func testBundles() []Bundle {
 	return []Bundle{
 		{
 			Type:     BundleNormal,
