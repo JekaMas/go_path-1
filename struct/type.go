@@ -16,9 +16,10 @@ const (
 	SortByBalance
 )
 
+// negative discount - adds overhead
 var DiscountMap = map[ProductType]map[AccountType]float32{
-	ProductPremium: {AccountPremium: -20, AccountNormal: -5},
-	ProductNormal:  {AccountPremium: +50, AccountNormal: 0},
+	ProductPremium: {AccountPremium: 20, AccountNormal: 5},
+	ProductNormal:  {AccountPremium: -50, AccountNormal: 0},
 }
 
 type ProductType uint8     // ProductNormal, ProductPremium, ProductSample

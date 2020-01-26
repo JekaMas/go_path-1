@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"sort"
 	"strings"
 )
@@ -204,15 +203,14 @@ func (m *Market) CalculateOrder(order Order) (float32, error) {
 	productsPrice := float32(0)
 	for _, product := range order.Products {
 		discount := DiscountMap[product.Type][account.Type]
-		productsPrice += product.Price * (1 + discount*0.01)
+		productsPrice += product.Price * (1 - discount*0.01)
 	}
 
 	// bundles
 	bundlesPrice := float32(0)
 	for _, bundle := range order.Bundles {
 
-		abs := math.Abs(float64(bundle.Discount))
-		if abs < 1 || abs > 99 {
+		if bundle.Discount < 1 || bundle.Discount > 99 {
 			return 0, ErrorInvalidDiscount
 		}
 
@@ -220,7 +218,7 @@ func (m *Market) CalculateOrder(order Order) (float32, error) {
 		for _, product := range bundle.Products {
 			price += product.Price
 		}
-		bundlesPrice += price * (1 + bundle.Discount*0.01)
+		bundlesPrice += price * (1 - bundle.Discount*0.01)
 	}
 
 	amount := productsPrice + bundlesPrice
@@ -274,8 +272,7 @@ func NewBundle(main Product, discount float32, additional ...Product) Bundle {
 
 func (m *Market) AddBundle(name string, main Product, discount float32, additional ...Product) error {
 
-	abs := math.Abs(float64(discount))
-	if abs < 1 || abs > 99 {
+	if discount < 1 || discount > 99 {
 		return ErrorInvalidDiscount
 	}
 
@@ -290,8 +287,7 @@ func (m *Market) AddBundle(name string, main Product, discount float32, addition
 
 func (m *Market) ChangeDiscount(name string, discount float32) error {
 
-	abs := math.Abs(float64(discount))
-	if abs < 1 || abs > 99 {
+	if discount < 1 || discount > 99 {
 		return ErrorInvalidDiscount
 	}
 
