@@ -6,11 +6,8 @@ import (
 )
 
 /**
-1. Доделать тесты
-2. Пробники
-3. Сохранение/чтение из файла
-4. Кеширование заказов
-5. Бандлы доделать
+1. Пробники, Бандлы доделать
+2. Кеширование заказов, Бенчмарки
 */
 
 /* -- ProductManager ------------------------------------------------------------------------------------------------ */
@@ -60,6 +57,10 @@ func TestShop_ModifyProduct(t *testing.T) {
 		wantErr bool
 	}
 
+	const (
+		productName = "P1"
+	)
+
 	m := NewMarket()
 	_ = m.AddProduct(Product{Name: "P1", Price: 100, Type: ProductNormal})
 
@@ -79,7 +80,7 @@ func TestShop_ModifyProduct(t *testing.T) {
 				t.Errorf("ModifyProduct() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if product := m.Products["P1"]; !tt.wantErr && reflect.DeepEqual(product, tt.product) {
+			if product := m.Products[productName]; !tt.wantErr && reflect.DeepEqual(product, tt.product) {
 				t.Errorf("ModifyProduct() product = %v, want %v",
 					product, tt.product)
 			}
@@ -87,36 +88,35 @@ func TestShop_ModifyProduct(t *testing.T) {
 	}
 }
 
-// TODO
 func TestShop_RemoveProduct(t *testing.T) {
-	type fields struct {
-		Accounts map[string]*Account
-		Products map[string]*Product
-		Bundles  map[string]*Bundle
+
+	type test struct {
+		name        string
+		productName string
+		wantErr     bool
 	}
-	type args struct {
-		name string
+
+	m := NewMarket()
+	_ = m.AddProduct(Product{Name: "P1", Price: 100, Type: ProductNormal})
+
+	tests := []test{
+		{"default", "P1", false},
+		{"netExist", "P2", true},
+		{"emptyName", "", true},
 	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := Market{
-				Accounts: tt.fields.Accounts,
-				Products: tt.fields.Products,
-				Bundles:  tt.fields.Bundles,
+			if err := m.RemoveProduct(tt.productName); (err != nil) != tt.wantErr {
+				t.Errorf("RemoveProduct() error = %v, wantErr %v, product %v", err, tt.wantErr, tt.name)
 			}
-			if err := m.RemoveProduct(tt.args.name); (err != nil) != tt.wantErr {
-				t.Errorf("RemoveProduct() error = %v, wantErr %v", err, tt.wantErr)
+
+			if product, ok := m.Products[tt.productName]; !tt.wantErr && ok {
+				t.Errorf("RemoveProduct() product %v has not been removed", product)
 			}
 		})
 	}
+
 }
 
 /* -- AccountManager ------------------------------------------------------------------------------------------------ */
@@ -536,104 +536,97 @@ func TestShop_ChangeDiscount(t *testing.T) {
 	}
 }
 
-// TODO
 func TestShop_RemoveBundle(t *testing.T) {
-	type fields struct {
-		Accounts map[string]*Account
-		Products map[string]*Product
-		Bundles  map[string]*Bundle
+
+	type test struct {
+		name       string
+		bundleName string
+		wantErr    bool
 	}
-	type args struct {
-		name string
+
+	m := NewMarket()
+	_ = m.AddBundle("B1", Product{"P1", 100, ProductPremium}, 10, Product{"P2", 100, ProductNormal})
+
+	tests := []test{
+		{"default", "B1", false},
+		{"notExist", "P1", true},
+		{"emptyName", "", true},
 	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := Market{
-				Accounts: tt.fields.Accounts,
-				Products: tt.fields.Products,
-				Bundles:  tt.fields.Bundles,
+			if err := m.RemoveBundle(tt.bundleName); (err != nil) != tt.wantErr {
+				t.Errorf("RemoveBundle() error = %v, wantErr %v, product %v", err, tt.wantErr, tt.name)
 			}
-			if err := m.RemoveBundle(tt.args.name); (err != nil) != tt.wantErr {
-				t.Errorf("RemoveBundle() error = %v, wantErr %v", err, tt.wantErr)
+
+			if product, ok := m.Bundles[tt.bundleName]; !tt.wantErr && ok {
+				t.Errorf("RemoveBundle() product %v has not been removed", product)
 			}
 		})
 	}
+
 }
 
 /* -- Importer, Exporter -------------------------------------------------------------------------------------------- */
 
-// TODO
 func TestShop_Export(t *testing.T) {
-	type fields struct {
-		Accounts map[string]*Account
-		Products map[string]*Product
-		Bundles  map[string]*Bundle
-	}
-	tests := []struct {
+
+	type test struct {
 		name    string
-		fields  fields
-		want    []byte
+		m       Market
 		wantErr bool
-	}{
-		// TODO: Add test cases.
 	}
+
+	tests := []test{
+		{"default", testMarket(), false},
+		{"empty", NewMarket(), false},
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := Market{
-				Accounts: tt.fields.Accounts,
-				Products: tt.fields.Products,
-				Bundles:  tt.fields.Bundles,
-			}
-			got, err := m.Export()
+			m := tt.m
+			bytes, err := m.Export()
+
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Export() error = %v, wantErr %v", err, tt.wantErr)
-				return
+				t.Errorf("Export() error while export shop, err= %v", err)
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Export() got = %v, want %v", got, tt.want)
+
+			if bytes == nil || len(bytes) == 0 {
+				t.Errorf("Export() empty export")
 			}
 		})
 	}
+
 }
 
-// TODO
 func TestShop_Import(t *testing.T) {
-	type fields struct {
-		Accounts map[string]*Account
-		Products map[string]*Product
-		Bundles  map[string]*Bundle
+
+	m := testMarket()
+	bytes, _ := m.Export()
+
+	m2 := NewMarket() // empty
+	err := m2.Import(bytes)
+
+	if err != nil {
+		t.Errorf("Import() error = %v", err)
 	}
-	type args struct {
-		data []byte
+
+	if !reflect.DeepEqual(m, m2) {
+		t.Errorf("Import() imported shop is invalid")
 	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
+
+	err = m2.Import(nil)
+
+	if err == nil {
+		t.Errorf("Import() imported nil bytes")
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			m := Market{
-				Accounts: tt.fields.Accounts,
-				Products: tt.fields.Products,
-				Bundles:  tt.fields.Bundles,
-			}
-			if err := m.Import(tt.args.data); (err != nil) != tt.wantErr {
-				t.Errorf("Import() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
+
+	err = m2.Import([]byte{0})
+
+	if err == nil {
+		t.Errorf("Import() imported invalid characters")
 	}
+
 }
 
 /* --- new ---------------------------------------------------------------------------------------------------------- */

@@ -1,7 +1,7 @@
 package shop
 
 import (
-	"encoding/xml"
+	"encoding/json"
 	"errors"
 	"math"
 	"sort"
@@ -292,9 +292,9 @@ func (m *Market) RemoveBundle(name string) error {
 /* -- Importer, Exporter -------------------------------------------------------------------------------------------- */
 
 func (m *Market) Import(data []byte) error {
-	return xml.Unmarshal(data, m)
+	return json.Unmarshal(data, m)
 }
 
 func (m *Market) Export() ([]byte, error) {
-	return xml.Marshal(m)
+	return json.MarshalIndent(m, "", "")
 }
