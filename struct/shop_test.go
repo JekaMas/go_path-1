@@ -7,7 +7,6 @@ import (
 
 /**
 1. Пробники, Бандлы доделать
-2. Bundle: объединить main с additional
 */
 
 /* -- ProductManager ------------------------------------------------------------------------------------------------ */
@@ -307,7 +306,7 @@ func TestShop_CalculateOrder(t *testing.T) {
 			NewOrder([]Product{NewProduct("P1", 90, pt), NewProduct("P2", 10, nt)}, nil, premAcc),
 			87, false,
 		},
-		{"premUserProduct",
+		{"premUserProduct1",
 			NewOrder([]Product{NewProduct("P1", 90, pt), NewProduct("P2", 10, pt)}, nil, premAcc),
 			80, false,
 		},
@@ -450,51 +449,53 @@ func TestShop_PlaceOrder(t *testing.T) {
 func TestShop_AddBundle(t *testing.T) {
 
 	type test struct {
-		name    string
-		bundle  Bundle
-		wantErr bool
+		name       string
+		main       Product
+		discount   float32
+		additional []Product
+		wantErr    bool
 	}
 
 	nt := ProductNormal  // normal type
 	pt := ProductPremium // premium type
 
 	tests := []test{
-		{"default", NewBundle(NewProduct("P1", 10, nt), 1, NewProduct("P2", 90, nt)), false},
-		{"default2", NewBundle(NewProduct("P1", 10, nt), -10, NewProduct("P2", 90, nt)), false},
-		{"default3", NewBundle(NewProduct("P1", 10, nt), -55.2345, NewProduct("P2", 90, nt)), false},
-		{"default4", NewBundle(NewProduct("P1", 10, nt), 76.546767, NewProduct("P2", 90, nt)), false},
+		{"default", NewProduct("P1", 10, nt), 1, []Product{NewProduct("P2", 90, nt)}, false},
+		{"default2", NewProduct("P1", 10, nt), -10, []Product{NewProduct("P2", 90, nt)}, false},
+		{"default3", NewProduct("P1", 10, nt), -55.2345, []Product{NewProduct("P2", 90, nt)}, false},
+		{"default4", NewProduct("P1", 10, nt), 76.546767, []Product{NewProduct("P2", 90, nt)}, false},
 
-		{"errDisc", NewBundle(NewProduct("P1", 10, nt), 0, NewProduct("P2", 90, nt)), true},
-		{"errDisc2", NewBundle(NewProduct("P1", 10, nt), 100, NewProduct("P2", 90, nt)), true},
-		{"errDisc3", NewBundle(NewProduct("P1", 10, nt), 101, NewProduct("P2", 90, nt)), true},
-		{"errDisc4", NewBundle(NewProduct("P1", 10, nt), 99.12456, NewProduct("P2", 90, nt)), true},
-		{"errDisc5", NewBundle(NewProduct("P1", 10, nt), 99.00001, NewProduct("P2", 90, nt)), true},
-		{"errDisc6", NewBundle(NewProduct("P1", 10, nt), 200, NewProduct("P2", 90, nt)), true},
+		{"errDisc", NewProduct("P1", 10, nt), 0, []Product{NewProduct("P2", 90, nt)}, true},
+		{"errDisc2", NewProduct("P1", 10, nt), 100, []Product{NewProduct("P2", 90, nt)}, true},
+		{"errDisc3", NewProduct("P1", 10, nt), 101, []Product{NewProduct("P2", 90, nt)}, true},
+		{"errDisc4", NewProduct("P1", 10, nt), 99.12456, []Product{NewProduct("P2", 90, nt)}, true},
+		{"errDisc5", NewProduct("P1", 10, nt), 99.00001, []Product{NewProduct("P2", 90, nt)}, true},
+		{"errDisc6", NewProduct("P1", 10, nt), 200, []Product{NewProduct("P2", 90, nt)}, true},
 
-		{"nilProd", NewBundle(Product{}, 0, NewProduct("P2", 90, nt)), true},
-		{"nilProd2", NewBundle(NewProduct("P1", 10, nt), 0, Product{}), true},
-		{"nilProd3", NewBundle(NewProduct("P1", 10, nt), 0, NewProduct("P2", 90, nt), Product{}), true},
-		{"nilProd4", NewBundle(NewProduct("P1", 10, nt), 0, Product{}, NewProduct("P2", 90, nt)), true},
-		{"nilProd5", NewBundle(Product{}, 0, NewProduct("P2", 90, nt), Product{}), true},
+		{"nilProd", Product{}, 0, []Product{NewProduct("P2", 90, nt)}, true},
+		{"nilProd2", NewProduct("P1", 10, nt), 0, []Product{{}}, true},
+		{"nilProd3", NewProduct("P1", 10, nt), 0, []Product{NewProduct("P2", 90, nt), {}}, true},
+		{"nilProd4", NewProduct("P1", 10, nt), 0, []Product{{}, NewProduct("P2", 90, nt)}, true},
+		{"nilProd5", Product{}, 0, []Product{NewProduct("P2", 90, nt), {}}, true},
 		// prem
-		{"defaultPrem", NewBundle(NewProduct("P1", 10, nt), 1, NewProduct("P2", 90, pt)), false},
-		{"errDiscPrem2", NewBundle(NewProduct("P1", 10, pt), 200, NewProduct("P2", 90, nt)), true},
-		{"nilProdPrem3", NewBundle(Product{}, 0, NewProduct("P2", 90, pt), Product{}), true},
+		{"defaultPrem", NewProduct("P1", 10, nt), 1, []Product{NewProduct("P2", 90, pt)}, false},
+		{"errDiscPrem2", NewProduct("P1", 10, pt), 200, []Product{NewProduct("P2", 90, nt)}, true},
+		{"nilProdPrem3", Product{}, 0, []Product{NewProduct("P2", 90, pt), {}}, true},
 	}
 
 	// test
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := NewMarket()
-			err := m.AddBundle(tt.name, tt.bundle.Main, tt.bundle.Discount, tt.bundle.Additional...)
+			err := m.AddBundle(tt.name, tt.main, tt.discount, tt.additional...)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("AddBundle() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if !tt.wantErr && !reflect.DeepEqual(tt.bundle, *m.Bundles[tt.name]) {
+			if !tt.wantErr && !reflect.DeepEqual(NewBundle(tt.main, tt.discount, tt.additional...), *m.Bundles[tt.name]) {
 				t.Errorf("AddBundle() wrong bundle added = %v get = %v",
-					tt.bundle, m.Bundles[tt.name])
+					NewBundle(tt.main, tt.discount, tt.additional...), m.Bundles[tt.name])
 			}
 		})
 	}
@@ -650,7 +651,7 @@ func testMarket() Market {
 	}
 
 	for _, b := range testBundles() {
-		_ = m.AddBundle(b.Main.Name, b.Main, b.Discount, b.Additional...)
+		_ = m.AddBundle(b.Products[0].Name, b.Products[0], b.Discount, b.Products[1:]...)
 	}
 
 	return m
@@ -736,8 +737,8 @@ func testBundles() []Bundle {
 		{
 			Type:     BundleNormal,
 			Discount: 20,
-			Main:     Product{Name: "Bowling Ball", Price: 100, Type: ProductNormal},
-			Additional: []Product{
+			Products: []Product{
+				{Name: "Bowling Ball", Price: 100, Type: ProductNormal},
 				{Name: "Skittle", Price: 50, Type: ProductNormal},
 				{Name: "Skittle", Price: 50, Type: ProductNormal},
 				{Name: "Skittle", Price: 50, Type: ProductPremium},
@@ -746,8 +747,8 @@ func testBundles() []Bundle {
 		{
 			Type:     BundleSample,
 			Discount: 1,
-			Main:     Product{Name: "Toy Gun", Price: 0, Type: ProductPremium},
-			Additional: []Product{
+			Products: []Product{
+				Product{Name: "Toy Gun", Price: 0, Type: ProductPremium},
 				{Name: "Battery", Price: 30, Type: ProductNormal},
 				{Name: "Battery", Price: 30, Type: ProductNormal},
 			},

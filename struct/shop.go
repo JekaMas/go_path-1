@@ -216,8 +216,8 @@ func (m *Market) CalculateOrder(order Order) (float32, error) {
 			return 0, ErrorInvalidDiscount
 		}
 
-		price := bundle.Main.Price
-		for _, product := range bundle.Additional {
+		price := float32(0)
+		for _, product := range bundle.Products {
 			price += product.Price
 		}
 		bundlesPrice += price * (1 + bundle.Discount*0.01)
@@ -257,6 +257,8 @@ func orderKey(order Order) string {
 	for _, value := range order.Bundles {
 		_, _ = fmt.Fprintf(b, "%v", value)
 	}
+
+	_, _ = fmt.Fprintf(b, "%v", order.Account.Type)
 	return b.String()
 }
 
@@ -264,10 +266,9 @@ func orderKey(order Order) string {
 
 func NewBundle(main Product, discount float32, additional ...Product) Bundle {
 	return Bundle{
-		Main:       main,
-		Additional: additional,
-		Type:       BundleNormal,
-		Discount:   discount,
+		Products: append(additional, main),
+		Type:     BundleNormal,
+		Discount: discount,
 	}
 }
 

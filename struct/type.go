@@ -39,10 +39,9 @@ type Order struct {
 }
 
 type Bundle struct {
-	Main       Product
-	Additional []Product
-	Type       BundleType
-	Discount   float32
+	Products []Product
+	Type     BundleType
+	Discount float32
 }
 
 type Account struct {
