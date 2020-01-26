@@ -1,8 +1,10 @@
 package shop
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"sort"
 	"strings"
@@ -18,9 +20,10 @@ var ErrorNegativeProductPrice = errors.New("product price is negative")
 
 func NewMarket() Market {
 	return Market{
-		Accounts: make(map[string]*Account),
-		Products: make(map[string]*Product),
-		Bundles:  make(map[string]*Bundle),
+		Accounts:    make(map[string]*Account),
+		Products:    make(map[string]*Product),
+		Bundles:     make(map[string]*Bundle),
+		OrdersCache: make(map[string]float32),
 	}
 }
 
@@ -190,6 +193,12 @@ func (m *Market) CalculateOrder(order Order) (float32, error) {
 	}
 
 	account := order.Account
+	key := orderKey(order)
+
+	// if exists, get from cache
+	if amount, ok := m.OrdersCache[key]; ok {
+		return amount, nil
+	}
 
 	// products
 	productsPrice := float32(0)
@@ -214,7 +223,10 @@ func (m *Market) CalculateOrder(order Order) (float32, error) {
 		bundlesPrice += price * (1 + bundle.Discount*0.01)
 	}
 
-	return productsPrice + bundlesPrice, nil
+	amount := productsPrice + bundlesPrice
+	m.OrdersCache[key] = amount
+
+	return amount, nil
 }
 
 func (m *Market) PlaceOrder(username string, order Order) error {
@@ -235,6 +247,17 @@ func (m *Market) PlaceOrder(username string, order Order) error {
 
 	acc.Balance -= amount
 	return nil
+}
+
+func orderKey(order Order) string {
+	b := new(bytes.Buffer)
+	for _, value := range order.Products { // FIXME handle errors
+		_, _ = fmt.Fprintf(b, "%v", value)
+	}
+	for _, value := range order.Bundles {
+		_, _ = fmt.Fprintf(b, "%v", value)
+	}
+	return b.String()
 }
 
 /* -- BundleManager ------------------------------------------------------------------------------------------------- */

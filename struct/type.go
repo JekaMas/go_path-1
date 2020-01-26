@@ -55,4 +55,6 @@ type Market struct {
 	Accounts map[string]*Account // map[username]Account
 	Products map[string]*Product // map[productName]Product
 	Bundles  map[string]*Bundle  // map[bundleName]Bundle
+
+	OrdersCache map[string]float32 // map[key]sum
 }

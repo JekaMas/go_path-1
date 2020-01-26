@@ -7,7 +7,7 @@ import (
 
 /**
 1. Пробники, Бандлы доделать
-2. Кеширование заказов, Бенчмарки
+2. Bundle: объединить main с additional
 */
 
 /* -- ProductManager ------------------------------------------------------------------------------------------------ */
@@ -312,8 +312,8 @@ func TestShop_CalculateOrder(t *testing.T) {
 			80, false,
 		},
 		{"bundle",
-			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, nt), 0, NewProduct("P2", 90, nt))}, acc),
-			100, false,
+			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, nt), -1, NewProduct("P2", 90, nt))}, acc),
+			99, false,
 		},
 		{"bundle2",
 			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, nt), -10, NewProduct("P2", 90, nt))}, acc),
@@ -331,9 +331,13 @@ func TestShop_CalculateOrder(t *testing.T) {
 			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 100, pt), -10, NewProduct("P2", 91, pt))}, premAcc),
 			171.9, false,
 		},
-		{"zeroBundle",
+		//{"nineBundle", // FIXME precision
+		//	NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, nt), -99, NewProduct("P2", 90, nt))}, acc),
+		//	1, false,
+		//},
+		{"errBundle",
 			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, nt), -100, NewProduct("P2", 90, nt))}, acc),
-			0, false,
+			0, true,
 		},
 		{"errBundle",
 			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, nt), -120, NewProduct("P2", 90, nt))}, acc),
