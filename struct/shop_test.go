@@ -139,7 +139,7 @@ func TestShop_Balance(t *testing.T) {
 
 	type test struct {
 		name     string
-		username string
+		userName string
 		want     float32
 		wantErr  bool
 	}
@@ -158,7 +158,7 @@ func TestShop_Balance(t *testing.T) {
 
 	for _, tt := range tests {
 
-		balance, err := m.Balance(tt.username)
+		balance, err := m.Balance(tt.userName)
 		if (err != nil) != tt.wantErr {
 			t.Errorf("Balance() error = %v, wantErr %v", err, tt.wantErr)
 		}
@@ -174,7 +174,7 @@ func TestShop_AddBalance(t *testing.T) {
 
 	type test struct {
 		name     string
-		username string
+		userName string
 		sum      float32
 		want     float32
 		wantErr  bool
@@ -195,11 +195,11 @@ func TestShop_AddBalance(t *testing.T) {
 
 	for _, tt := range tests {
 
-		if err := m.AddBalance(tt.username, tt.sum); (err != nil) != tt.wantErr {
+		if err := m.AddBalance(tt.userName, tt.sum); (err != nil) != tt.wantErr {
 			t.Errorf("AddBalance() error = %v, wantErr %v", err, tt.wantErr)
 		}
 
-		if balance, _ := m.Balance(tt.username); !tt.wantErr && balance != tt.want {
+		if balance, _ := m.Balance(tt.userName); !tt.wantErr && balance != tt.want {
 			t.Errorf("AddBalance() balance = %v, want %v",
 				balance, tt.want)
 		}
@@ -269,10 +269,11 @@ func TestShop_GetAccounts(t *testing.T) {
 func TestShop_CalculateOrder(t *testing.T) {
 
 	type test struct {
-		name    string
-		order   Order
-		wantSum float32
-		wantErr bool
+		name     string
+		userName string
+		order    Order
+		wantSum  float32
+		wantErr  bool
 	}
 
 	nt := ProductNormal  // normal type
@@ -282,85 +283,94 @@ func TestShop_CalculateOrder(t *testing.T) {
 	acc := Account{"A", 0, AccountNormal}
 	premAcc := Account{"B", 0, AccountPremium}
 
+	m := testMarket()
+	// reg
+	for _, a := range []Account{acc, premAcc} {
+		_ = m.Register(a.Name)
+		_ = m.ModifyAccountType(a.Name, a.Type)
+		_ = m.AddBalance(a.Name, a.Balance)
+	}
+
+	// tests
 	tests := []test{
-		{"one",
-			NewOrder([]Product{NewProduct("P", 90, nt)}, nil, acc),
+		{"one", acc.Name,
+			NewOrder([]Product{NewProduct("P", 90, nt)}, nil),
 			90, false,
 		},
-		{"two",
-			NewOrder([]Product{NewProduct("P1", 90, nt), NewProduct("P2", 10, nt)}, nil, acc),
+		{"two", acc.Name,
+			NewOrder([]Product{NewProduct("P1", 90, nt), NewProduct("P2", 10, nt)}, nil),
 			100, false,
 		},
-		{"premProduct",
-			NewOrder([]Product{NewProduct("P1", 90, pt), NewProduct("P2", 10, nt)}, nil, acc),
+		{"premProduct", acc.Name,
+			NewOrder([]Product{NewProduct("P1", 90, pt), NewProduct("P2", 10, nt)}, nil),
 			95.5, false,
 		},
-		{"premProduct2",
-			NewOrder([]Product{NewProduct("P1", 90, pt), NewProduct("P2", 10, pt)}, nil, acc),
+		{"premProduct2", acc.Name,
+			NewOrder([]Product{NewProduct("P1", 90, pt), NewProduct("P2", 10, pt)}, nil),
 			95, false,
 		},
-		{"premUserProduct",
-			NewOrder([]Product{NewProduct("P1", 90, pt), NewProduct("P2", 10, nt)}, nil, premAcc),
+		{"premUserProduct", premAcc.Name,
+			NewOrder([]Product{NewProduct("P1", 90, pt), NewProduct("P2", 10, nt)}, nil),
 			87, false,
 		},
-		{"premUserProduct1",
-			NewOrder([]Product{NewProduct("P1", 90, pt), NewProduct("P2", 10, pt)}, nil, premAcc),
+		{"premUserProduct1", premAcc.Name,
+			NewOrder([]Product{NewProduct("P1", 90, pt), NewProduct("P2", 10, pt)}, nil),
 			80, false,
 		},
-		{"bundle",
-			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, nt), 1, NewProduct("P2", 90, nt))}, acc),
+		{"bundle", acc.Name,
+			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, nt), 1, NewProduct("P2", 90, nt))}),
 			99, false,
 		},
-		{"bundle2",
-			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, nt), 10, NewProduct("P2", 90, nt))}, acc),
+		{"bundle2", acc.Name,
+			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, nt), 10, NewProduct("P2", 90, nt))}),
 			90, false,
 		},
-		{"premBundle",
-			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 100, pt), 10, NewProduct("P2", 91, nt))}, acc),
+		{"premBundle", acc.Name,
+			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 100, pt), 10, NewProduct("P2", 91, nt))}),
 			171.9, false,
 		},
-		{"premBundle2",
-			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 100, pt), 10, NewProduct("P2", 91, pt))}, acc),
+		{"premBundle2", acc.Name,
+			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 100, pt), 10, NewProduct("P2", 91, pt))}),
 			171.9, false,
 		},
-		{"premBundle3",
-			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 100, pt), 10, NewProduct("P2", 91, pt))}, premAcc),
+		{"premBundle3", premAcc.Name,
+			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 100, pt), 10, NewProduct("P2", 91, pt))}),
 			171.9, false,
 		},
 		//{"nineBundle", // FIXME precision
 		//	NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, nt), -99, NewProduct("P2", 90, nt))}, acc),
 		//	1, false,
 		//},
-		{"errBundle",
-			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, nt), 100, NewProduct("P2", 90, nt))}, acc),
+		{"errBundle", acc.Name,
+			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, nt), 100, NewProduct("P2", 90, nt))}),
 			0, true,
 		},
-		{"errBundle",
-			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, nt), 120, NewProduct("P2", 90, nt))}, acc),
+		{"errBundle", acc.Name,
+			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, nt), 120, NewProduct("P2", 90, nt))}),
 			0, true,
 		},
-		{"zero",
-			NewOrder([]Product{}, []Bundle{}, acc),
+		{"zero", acc.Name,
+			NewOrder([]Product{}, []Bundle{}),
 			0, false,
 		},
-		{"zero2",
-			NewOrder([]Product{}, nil, acc),
+		{"zero2", acc.Name,
+			NewOrder([]Product{}, nil),
 			0, false,
 		},
-		{"err",
-			NewOrder(nil, nil, acc),
+		{"err", acc.Name,
+			NewOrder(nil, nil),
 			0, true,
 		},
-		{"err",
-			NewOrder(nil, []Bundle{}, acc),
+		{"err", acc.Name,
+			NewOrder(nil, []Bundle{}),
 			0, true,
 		},
-		{"errSampled",
-			NewOrder([]Product{NewProduct("P1", 90, st), NewProduct("P2", 10, nt)}, nil, acc),
+		{"errSampled", acc.Name,
+			NewOrder([]Product{NewProduct("P1", 90, st), NewProduct("P2", 10, nt)}, nil),
 			100, true,
 		},
-		{"sampled",
-			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, nt), 10, NewProduct("P2", 90, st))}, acc),
+		{"sampled", acc.Name,
+			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, nt), 10, NewProduct("P2", 90, st))}),
 			90, false,
 		},
 		//{"sampledErr", // FIXME case
@@ -369,12 +379,10 @@ func TestShop_CalculateOrder(t *testing.T) {
 		//},
 	}
 
-	m := testMarket()
-
 	// test
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sum, err := m.CalculateOrder(tt.order)
+			sum, err := m.CalculateOrder(tt.userName, tt.order)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CalculateOrder() error = %v, wantErr %v", err, tt.wantErr)
@@ -402,31 +410,31 @@ func TestShop_PlaceOrder(t *testing.T) {
 
 	tests := []test{
 		{"default", acc,
-			NewOrder([]Product{NewProduct("P", 90, ProductNormal)}, nil, acc),
+			NewOrder([]Product{NewProduct("P", 90, ProductNormal)}, nil),
 			10_000 - 90, false,
 		},
 		{"default2", acc,
-			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, ProductNormal), 10)}, acc),
+			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, ProductNormal), 10)}),
 			10_000 - 9, false,
 		},
 		{"default3", acc,
-			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, ProductNormal), 10, NewProduct("P2", 90, ProductNormal))}, acc),
+			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, ProductNormal), 10, NewProduct("P2", 90, ProductNormal))}),
 			10_000 - 90, false,
 		},
 		{"zero", acc,
-			NewOrder([]Product{NewProduct("P", 0, ProductNormal)}, nil, acc),
+			NewOrder([]Product{NewProduct("P", 0, ProductNormal)}, nil),
 			10_000, false,
 		},
 		{"zero2", acc,
-			NewOrder([]Product{}, nil, acc),
+			NewOrder([]Product{}, nil),
 			10_000, false,
 		},
 		{"zero3", acc,
-			NewOrder([]Product{}, nil, acc),
+			NewOrder([]Product{}, nil),
 			10_000, false,
 		},
 		{"much", acc,
-			NewOrder([]Product{NewProduct("P", 10_001, ProductNormal)}, nil, acc),
+			NewOrder([]Product{NewProduct("P", 10_001, ProductNormal)}, nil),
 			0, true,
 		},
 	}
@@ -652,6 +660,20 @@ func TestShop_Import(t *testing.T) {
 		t.Errorf("Import() imported invalid characters")
 	}
 
+}
+
+/* -- Additional ---------------------------------------------------------------------------------------------------- */
+
+func TestMarketImplementsShop(t *testing.T) {
+
+	m := NewMarket()
+	var i interface{} = &m
+
+	_, ok := i.(Shop)
+
+	if !ok {
+		t.Fatal("market doesn't implements shop interface")
+	}
 }
 
 /* --- new ---------------------------------------------------------------------------------------------------------- */

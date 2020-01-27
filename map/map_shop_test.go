@@ -120,7 +120,7 @@ func TestMakeOrder(t *testing.T) {
 	// t.Logf("Total amount '%v': %v", "Vasya", users["Vasya"])
 }
 
-func TestUserNames(t *testing.T) {
+func TestuserNames(t *testing.T) {
 	_ = AddUser("Vova", 1_000_000)
 	_ = AddUser("Katya", 1_999)
 	_ = AddUser("Petya", 250)
@@ -133,10 +133,10 @@ func TestUserNames(t *testing.T) {
 		fmt.Println()
 	}
 
-	names := UserNames(SORT_USERS_BY_NAME)
+	names := userNames(SORT_USERS_BY_NAME)
 	printUsers(names)
-	names = UserNames(SORT_USERS_BY_NAME_REVERSED)
+	names = userNames(SORT_USERS_BY_NAME_REVERSED)
 	printUsers(names)
-	names = UserNames(SORT_USERS_BY_AMOUNT)
+	names = userNames(SORT_USERS_BY_AMOUNT)
 	printUsers(names)
 }

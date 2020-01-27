@@ -93,69 +93,69 @@ func (m *Market) checkProduct(p Product) error {
 
 /* -- AccountManager ------------------------------------------------------------------------------------------------ */
 
-func NewAccount(username string) Account {
+func NewAccount(userName string) Account {
 	return Account{
-		Name:    username,
+		Name:    userName,
 		Balance: 0,
 		Type:    AccountNormal,
 	}
 }
 
-func (m *Market) Register(username string) error {
+func (m *Market) Register(userName string) error {
 
-	if len(username) == 0 {
+	if len(userName) == 0 {
 		return ErrorEmptyField
 	}
 
-	if _, ok := m.Accounts[username]; ok {
+	if _, ok := m.Accounts[userName]; ok {
 		return ErrorAccountExists
 	}
 
-	acc := NewAccount(username)
-	m.Accounts[username] = &acc
+	acc := NewAccount(userName)
+	m.Accounts[userName] = &acc
 	return nil
 }
 
-func (m *Market) AddBalance(username string, sum float32) error {
+func (m *Market) AddBalance(userName string, sum float32) error {
 
 	if sum < 0 {
 		return errors.New("cannot add negative sum")
 	}
 
-	if _, ok := m.Accounts[username]; !ok {
+	if _, ok := m.Accounts[userName]; !ok {
 		return ErrorAccountNotRegistered
 	}
 
-	acc := m.Accounts[username]
+	acc := m.Accounts[userName]
 	acc.Balance += sum
 	return nil
 }
 
-func (m *Market) ModifyAccountType(username string, accountType AccountType) error {
+func (m *Market) ModifyAccountType(userName string, accountType AccountType) error {
 
-	if _, ok := m.Accounts[username]; !ok {
+	if _, ok := m.Accounts[userName]; !ok {
 		return ErrorAccountNotRegistered
 	}
 
-	acc := m.Accounts[username]
+	acc := m.Accounts[userName]
 	acc.Type = accountType
 	return nil
 }
 
-func (m *Market) Balance(username string) (float32, error) {
+func (m *Market) Balance(userName string) (float32, error) {
 
-	if _, ok := m.Accounts[username]; !ok {
+	if _, ok := m.Accounts[userName]; !ok {
 		return 0, ErrorAccountNotRegistered
 	}
 
-	return m.Accounts[username].Balance, nil
+	return m.Accounts[userName].Balance, nil
 }
 
 func (m *Market) GetAccount(name string) (Account, error) {
 	acc, ok := m.Accounts[name]
 
 	if !ok {
-		return *acc, ErrorAccountNotRegistered
+		return Account{}, ErrorAccountNotRegistered
 	}
 
 	return *acc, nil
@@ -192,23 +192,26 @@ func (m *Market) GetAccounts(sortType AccountSortType) []Account {
 
 /* -- OrderManager -------------------------------------------------------------------------------------------------- */
 
-func NewOrder(products []Product, bundles []Bundle, account Account) Order {
+func NewOrder(products []Product, bundles []Bundle) Order {
 	return Order{
 		Products: products,
 		Bundles:  bundles,
-		Account:  account,
 	}
 }
 
-func (m *Market) CalculateOrder(order Order) (float32, error) {
+func (m *Market) CalculateOrder(userName string, order Order) (float32, error) {
 
 	if order.Products == nil {
 		return 0, errors.New("products in the order is nil")
 	}
 
-	account := order.Account
-	key := orderKey(order)
+	account, err := m.GetAccount(userName)
+	if err != nil {
+		return 0, errors.Wrap(err, "cannot calculate on a nil account")
+	}
 
+	// cache key
+	key := orderKey(account, order)
 	// if exists, get from cache
 	if amount, ok := m.OrdersCache[key]; ok {
 		return amount, nil
@@ -247,14 +250,14 @@ func (m *Market) CalculateOrder(order Order) (float32, error) {
 	return amount, nil
 }
 
-func (m *Market) PlaceOrder(username string, order Order) error {
+func (m *Market) PlaceOrder(userName string, order Order) error {
 
-	amount, err := m.CalculateOrder(order)
+	amount, err := m.CalculateOrder(userName, order)
 	if err != nil {
 		return errors.Wrap(err, "error during order calculation")
 	}
 
-	acc, ok := m.Accounts[username]
+	acc, ok := m.Accounts[userName]
 	if !ok {
 		return ErrorAccountNotRegistered
 	}
@@ -267,7 +270,7 @@ func (m *Market) PlaceOrder(username string, order Order) error {
 	return nil
 }
 
-func orderKey(order Order) string {
+func orderKey(account Account, order Order) string {
 	b := new(bytes.Buffer)
 	for _, value := range order.Products { // FIXME handle errors
 		_, _ = fmt.Fprintf(b, "%v", value)
@@ -276,7 +279,7 @@ func orderKey(order Order) string {
 		_, _ = fmt.Fprintf(b, "%v", value)
 	}
 
-	_, _ = fmt.Fprintf(b, "%v", order.Account.Type)
+	_, _ = fmt.Fprintf(b, "%v", account.Type)
 	return b.String()
 }
 

@@ -88,15 +88,15 @@ func MakeOrder(userName string, order map[string]int) error {
 	return errors.New("insufficient funds")
 }
 
-// enum of UserNames possible sort orders
+// enum of userNames possible sort orders
 const (
 	SORT_USERS_BY_NAME = iota
 	SORT_USERS_BY_NAME_REVERSED
 	SORT_USERS_BY_AMOUNT
 )
 
-// UserNames return slice of userNames in some order
-func UserNames(sortType int) []string {
+// userNames return slice of userNames in some order
+func userNames(sortType int) []string {
 
 	var keys []string
 

@@ -36,7 +36,6 @@ type Product struct {
 type Order struct {
 	Products []Product
 	Bundles  []Bundle
-	Account
 }
 
 type Bundle struct {
@@ -52,7 +51,7 @@ type Account struct {
 }
 
 type Market struct {
-	Accounts map[string]*Account // map[username]Account
+	Accounts map[string]*Account // map[userName]Account
 	Products map[string]*Product // map[productName]Product
 	Bundles  map[string]*Bundle  // map[bundleName]Bundle
 
