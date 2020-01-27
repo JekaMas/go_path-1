@@ -202,6 +202,11 @@ func (m *Market) CalculateOrder(order Order) (float32, error) {
 	// products
 	productsPrice := float32(0)
 	for _, product := range order.Products {
+
+		if product.Type == ProductSampled {
+			return 0, errors.New("sampled product cannot be bought without bundle")
+		}
+
 		discount := DiscountMap[product.Type][account.Type]
 		productsPrice += product.Price * (1 - discount*0.01)
 	}
@@ -276,6 +281,15 @@ func (m *Market) AddBundle(name string, main Product, discount float32, addition
 		return ErrorInvalidDiscount
 	}
 
+	if main.Type == ProductSampled {
+		return errors.New("main product cannot be sampled")
+	}
+
+	sampled := getProductsWithType(additional, ProductSampled)
+	if len(sampled) > 1 {
+		return errors.New("too many sampled products")
+	}
+
 	if _, ok := m.Bundles[name]; ok {
 		return ErrorBundleExists
 	}
@@ -307,6 +321,15 @@ func (m *Market) RemoveBundle(name string) error {
 
 	delete(m.Bundles, name)
 	return nil
+}
+
+func getProductsWithType(products []Product, productType ProductType) (result []Product) {
+	for _, p := range products {
+		if p.Type == productType {
+			result = append(result, p)
+		}
+	}
+	return
 }
 
 /* -- Importer, Exporter -------------------------------------------------------------------------------------------- */

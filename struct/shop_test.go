@@ -5,10 +5,6 @@ import (
 	"testing"
 )
 
-/**
-1. Пробники, Бандлы доделать
-*/
-
 /* -- ProductManager ------------------------------------------------------------------------------------------------ */
 
 func TestShop_AddProduct(t *testing.T) {
@@ -281,6 +277,7 @@ func TestShop_CalculateOrder(t *testing.T) {
 
 	nt := ProductNormal  // normal type
 	pt := ProductPremium // premium type
+	st := ProductSampled // sampled type
 
 	acc := Account{"A", 0, AccountNormal}
 	premAcc := Account{"B", 0, AccountPremium}
@@ -358,6 +355,18 @@ func TestShop_CalculateOrder(t *testing.T) {
 			NewOrder(nil, []Bundle{}, acc),
 			0, true,
 		},
+		{"errSampled",
+			NewOrder([]Product{NewProduct("P1", 90, st), NewProduct("P2", 10, nt)}, nil, acc),
+			100, true,
+		},
+		{"sampled",
+			NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, nt), 10, NewProduct("P2", 90, st))}, acc),
+			90, false,
+		},
+		//{"sampledErr", // FIXME case
+		//	NewOrder([]Product{}, []Bundle{NewBundle(NewProduct("P1", 10, nt), 10, NewProduct("P2", 90, st), NewProduct("P2", 90, st))}, acc),
+		//	0, true,
+		//},
 	}
 
 	m := testMarket()
@@ -458,6 +467,7 @@ func TestShop_AddBundle(t *testing.T) {
 
 	nt := ProductNormal  // normal type
 	pt := ProductPremium // premium type
+	st := ProductSampled
 
 	tests := []test{
 		{"default", NewProduct("P1", 10, nt), 1, []Product{NewProduct("P2", 90, nt)}, false},
@@ -482,6 +492,11 @@ func TestShop_AddBundle(t *testing.T) {
 		{"defaultPrem", NewProduct("P1", 10, nt), 1, []Product{NewProduct("P2", 90, pt)}, false},
 		{"errDiscPrem2", NewProduct("P1", 10, pt), 200, []Product{NewProduct("P2", 90, nt)}, true},
 		{"nilProdPrem3", Product{}, 0, []Product{NewProduct("P2", 90, pt), {}}, true},
+
+		// sampled
+		{"defaultSampled", NewProduct("P1", 10, nt), 1, []Product{NewProduct("P2", 90, st)}, false},
+		{"errSampled", NewProduct("P1", 10, st), 1, []Product{NewProduct("P2", 90, nt)}, true},
+		{"errSampled2", NewProduct("P1", 10, nt), 1, []Product{NewProduct("P2", 90, st), NewProduct("P2", 90, st)}, true},
 	}
 
 	// test
