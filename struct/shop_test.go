@@ -444,9 +444,12 @@ func TestShop_PlaceOrder(t *testing.T) {
 				t.Errorf("PlaceOrder() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if !tt.wantErr && !reflect.DeepEqual(m.GetAccount(tt.acc.Name).Balance, tt.wantBalance) {
-				t.Errorf("PlaceOrder() wrong balance, want = %v get = %v",
-					tt.wantBalance, m.GetAccount(tt.acc.Name).Balance)
+			if !tt.wantErr {
+				acc, _ := m.GetAccount(tt.acc.Name)
+				if !tt.wantErr && !reflect.DeepEqual(acc.Balance, tt.wantBalance) {
+					t.Errorf("PlaceOrder() wrong balance, want = %v get = %v",
+						tt.wantBalance, acc.Balance)
+				}
 			}
 		})
 	}

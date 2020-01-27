@@ -3,8 +3,8 @@ package shop
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"github.com/pkg/errors"
 	"sort"
 	"strings"
 )
@@ -38,12 +38,8 @@ func NewProduct(productName string, price float32, productType ProductType) Prod
 
 func (m *Market) AddProduct(p Product) error {
 
-	if len(p.Name) == 0 {
-		return ErrorEmptyField
-	}
-
-	if p.Price < 0 {
-		return ErrorNegativeProductPrice
+	if err := m.checkProduct(p); err != nil {
+		return errors.Wrap(err, "invalid check product")
 	}
 
 	if _, ok := m.Products[p.Name]; ok {
@@ -56,11 +52,12 @@ func (m *Market) AddProduct(p Product) error {
 
 func (m *Market) ModifyProduct(p Product) error {
 
+	if err := m.checkProduct(p); err != nil {
+		return errors.Wrap(err, "invalid product check")
+	}
+
 	if _, ok := m.Products[p.Name]; !ok {
 		return errors.New("cannot modify nil product")
-	}
-	if !m.checkProduct(p) {
-		return errors.New("invalid product check")
 	}
 
 	m.Products[p.Name] = &p
@@ -77,9 +74,21 @@ func (m *Market) RemoveProduct(name string) error {
 	return nil
 }
 
-func (m *Market) checkProduct(p Product) bool {
-	return p.Price >= 0 && len(p.Name) > 0 && // FIXME check product type
-		(p.Type == ProductSampled || p.Type == ProductPremium || p.Type == ProductNormal)
+func (m *Market) checkProduct(p Product) error {
+
+	if p.Price < 0 {
+		return ErrorNegativeProductPrice
+	}
+
+	if len(p.Name) == 0 {
+		return ErrorEmptyField
+	}
+
+	if !(p.Type == ProductSampled || p.Type == ProductPremium || p.Type == ProductNormal) {
+		return errors.New("no such product type")
+	}
+
+	return nil
 }
 
 /* -- AccountManager ------------------------------------------------------------------------------------------------ */
@@ -142,8 +151,14 @@ func (m *Market) Balance(username string) (float32, error) {
 	return m.Accounts[username].Balance, nil
 }
 
-func (m *Market) GetAccount(name string) Account {
-	return *m.Accounts[name]
+func (m *Market) GetAccount(name string) (Account, error) {
+	acc, ok := m.Accounts[name]
+
+	if !ok {
+		return *acc, ErrorAccountNotRegistered
+	}
+
+	return *acc, nil
 }
 
 func (m *Market) GetAccounts(sortType AccountSortType) []Account {
@@ -236,7 +251,7 @@ func (m *Market) PlaceOrder(username string, order Order) error {
 
 	amount, err := m.CalculateOrder(order)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "error during order calculation")
 	}
 
 	acc, ok := m.Accounts[username]
