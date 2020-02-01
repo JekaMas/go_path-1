@@ -19,9 +19,9 @@ var ErrorNegativeProductPrice = errors.New("product price is negative")
 
 func NewMarket() Market {
 	return Market{
-		Accounts:    make(map[string]*Account),
-		Products:    make(map[string]*Product),
-		Bundles:     make(map[string]*Bundle),
+		Accounts:    make(map[string]Account),
+		Products:    make(map[string]Product),
+		Bundles:     make(map[string]Bundle),
 		OrdersCache: make(map[string]float32),
 	}
 }
@@ -46,7 +46,7 @@ func (m *Market) AddProduct(p Product) error {
 		return errors.New("product already exists")
 	}
 
-	m.Products[p.Name] = &p
+	m.Products[p.Name] = p
 	return nil
 }
 
@@ -60,7 +60,7 @@ func (m *Market) ModifyProduct(p Product) error {
 		return errors.New("cannot modify nil product")
 	}
 
-	m.Products[p.Name] = &p
+	m.Products[p.Name] = p
 	return nil
 }
 
@@ -112,7 +112,7 @@ func (m *Market) Register(userName string) error {
 	}
 
 	acc := NewAccount(userName)
-	m.Accounts[userName] = &acc
+	m.Accounts[userName] = acc
 	return nil
 }
 
@@ -128,6 +128,8 @@ func (m *Market) AddBalance(userName string, sum float32) error {
 
 	acc := m.Accounts[userName]
 	acc.Balance += sum
+
+	m.Accounts[userName] = acc
 	return nil
 }
 
@@ -139,6 +141,8 @@ func (m *Market) ModifyAccountType(userName string, accountType AccountType) err
 
 	acc := m.Accounts[userName]
 	acc.Type = accountType
+
+	m.Accounts[userName] = acc
 	return nil
 }
 
@@ -158,13 +162,13 @@ func (m *Market) GetAccount(name string) (Account, error) {
 		return Account{}, ErrorAccountNotRegistered
 	}
 
-	return *acc, nil
+	return acc, nil
 }
 
 func (m *Market) GetAccounts(sortType AccountSortType) []Account {
 	var accs []Account
 	for _, acc := range m.Accounts {
-		accs = append(accs, *acc)
+		accs = append(accs, acc)
 	}
 	// compare function
 	var less func(i, j int) bool
@@ -267,6 +271,7 @@ func (m *Market) PlaceOrder(userName string, order Order) error {
 	}
 
 	acc.Balance -= amount
+	m.Accounts[userName] = acc
 	return nil
 }
 
@@ -313,7 +318,7 @@ func (m *Market) AddBundle(name string, main Product, discount float32, addition
 	}
 
 	b := NewBundle(main, discount, additional...)
-	m.Bundles[name] = &b
+	m.Bundles[name] = b
 	return nil
 }
 
@@ -327,7 +332,10 @@ func (m *Market) ChangeDiscount(name string, discount float32) error {
 		return ErrorBundleNotExists
 	}
 
-	m.Bundles[name].Discount = discount
+	acc := m.Bundles[name]
+	acc.Discount = discount
+
+	m.Bundles[name] = acc
 	return nil
 }
 

@@ -75,7 +75,7 @@ func TestShop_ModifyProduct(t *testing.T) {
 				t.Errorf("ModifyProduct() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if product := m.Products[productName]; !tt.wantErr && reflect.DeepEqual(product, tt.product) {
+			if product := m.Products[productName]; !tt.wantErr && !reflect.DeepEqual(product, tt.product) {
 				t.Errorf("ModifyProduct() product = %v, want %v",
 					product, tt.product)
 			}
@@ -520,7 +520,7 @@ func TestShop_AddBundle(t *testing.T) {
 				t.Errorf("AddBundle() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if !tt.wantErr && !reflect.DeepEqual(NewBundle(tt.main, tt.discount, tt.additional...), *m.Bundles[tt.name]) {
+			if !tt.wantErr && !reflect.DeepEqual(NewBundle(tt.main, tt.discount, tt.additional...), m.Bundles[tt.name]) {
 				t.Errorf("AddBundle() wrong bundle added = %v get = %v",
 					NewBundle(tt.main, tt.discount, tt.additional...), m.Bundles[tt.name])
 			}
