@@ -1,8 +1,6 @@
 package shop
 
-import (
-	"testing"
-)
+import "testing"
 
 func BenchmarkMarket_CalculateOrder(b *testing.B) {
 
