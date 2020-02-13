@@ -5,8 +5,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-var ErrorAccountNotRegistered = errors.New("account is not registered")
-var ErrorAccountExists = errors.New("account already exists")
 var ErrorBundleExists = errors.New("bundle already exists")
 var ErrorBundleNotExists = errors.New("bundle not exists")
 var ErrorInvalidDiscount = errors.New("invalid discount")

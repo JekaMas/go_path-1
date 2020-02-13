@@ -6,6 +6,12 @@ import (
 	"strings"
 )
 
+var (
+	ErrorAccountNotRegistered = errors.New("account is not registered")
+	ErrorAccountExists        = errors.New("account already exists")
+	ErrorAccountInvalidType   = errors.New("account type is invalid")
+)
+
 /* -- AccountManager ------------------------------------------------------------------------------------------------ */
 
 func NewAccount(userName string) Account {
@@ -52,6 +58,9 @@ func (m *Market) ModifyAccountType(userName string, accountType AccountType) err
 
 	if _, ok := m.Accounts[userName]; !ok {
 		return ErrorAccountNotRegistered
+	}
+	if _, ok := AccountTypeMap[accountType]; !ok {
+		return ErrorAccountInvalidType
 	}
 
 	acc := m.Accounts[userName]

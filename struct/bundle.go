@@ -4,12 +4,16 @@ import (
 	"github.com/pkg/errors"
 )
 
+var (
+	ErrorBundleSampleAdditionalProducts = errors.New("bundle sample cannot have additional products")
+)
+
 /* -- BundleManager ------------------------------------------------------------------------------------------------- */
 
-func NewBundle(main Product, discount float32, additional ...Product) Bundle {
+func NewBundle(main Product, discount float32, bundleType BundleType, additional ...Product) Bundle {
 	return Bundle{
 		Products: append(additional, main),
-		Type:     BundleNormal,
+		Type:     bundleType,
 		Discount: discount,
 	}
 }
@@ -28,12 +32,21 @@ func (m *Market) AddBundle(name string, main Product, discount float32, addition
 	if len(sampled) > 1 {
 		return errors.New("too many sampled products")
 	}
+	if len(sampled) == 1 && len(additional) > 1 {
+		return ErrorBundleSampleAdditionalProducts
+	}
 
 	if _, ok := m.Bundles[name]; ok {
 		return ErrorBundleExists
 	}
 
-	b := NewBundle(main, discount, additional...)
+	bundleType := BundleNormal
+	if len(sampled) == 1 {
+		bundleType = BundleSample
+	}
+
+	b := NewBundle(main, discount, bundleType, additional...)
+
 	m.Bundles[name] = b
 	return nil
 }

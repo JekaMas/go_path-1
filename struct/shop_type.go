@@ -27,6 +27,20 @@ type BundleType uint8      // BundleNormal, BundleSample
 type AccountType uint8     // AccountNormal, AccountSample
 type AccountSortType uint8 // SortByName, SortByNameReverse, SortByBalance
 
+var ProductTypeMap = map[ProductType]struct{}{
+	ProductNormal:  {},
+	ProductPremium: {},
+	ProductSampled: {},
+}
+var BundleTypeMap = map[BundleType]struct{}{
+	BundleNormal: {},
+	BundleSample: {},
+}
+var AccountTypeMap = map[AccountType]struct{}{
+	AccountNormal:  {},
+	AccountPremium: {},
+}
+
 type Product struct {
 	Name  string
 	Price float32

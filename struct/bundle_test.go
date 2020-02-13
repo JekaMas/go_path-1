@@ -6,10 +6,6 @@ import (
 	"testing"
 )
 
-var (
-	ErrorBundleSampleNotHasOtherProduct = errors.New("bundle sample not has other product")
-)
-
 func TestAddBundleSuccess(t *testing.T) {
 	type bundleTest struct {
 		testName    string
@@ -77,7 +73,7 @@ func TestAddBundleFailed(t *testing.T) {
 					Price: 1000,
 					Type:  ProductPremium,
 				}},
-			err: ErrorBundleSampleNotHasOtherProduct},
+			err: ErrorBundleSampleAdditionalProducts},
 	}
 
 	testShop := NewMarket()
@@ -102,6 +98,7 @@ func TestShop_AddBundle(t *testing.T) {
 		name       string
 		main       Product
 		discount   float32
+		bundleType BundleType
 		additional []Product
 		wantErr    bool
 	}
@@ -111,33 +108,33 @@ func TestShop_AddBundle(t *testing.T) {
 	st := ProductSampled
 
 	tests := []test{
-		{"default", NewProduct("P1", 10, nt), 1, []Product{NewProduct("P2", 90, nt)}, false},
-		{"default2", NewProduct("P1", 10, nt), 10, []Product{NewProduct("P2", 90, nt)}, false},
-		{"default3", NewProduct("P1", 10, nt), 55.2345, []Product{NewProduct("P2", 90, nt)}, false},
-		{"default4", NewProduct("P1", 10, nt), 76.546767, []Product{NewProduct("P2", 90, nt)}, false},
+		{"default", NewProduct("P1", 10, nt), 1, BundleNormal, []Product{NewProduct("P2", 90, nt)}, false},
+		{"default2", NewProduct("P1", 10, nt), 10, BundleNormal, []Product{NewProduct("P2", 90, nt)}, false},
+		{"default3", NewProduct("P1", 10, nt), 55.2345, BundleNormal, []Product{NewProduct("P2", 90, nt)}, false},
+		{"default4", NewProduct("P1", 10, nt), 76.546767, BundleNormal, []Product{NewProduct("P2", 90, nt)}, false},
 
-		{"errDisc", NewProduct("P1", 10, nt), 0, []Product{NewProduct("P2", 90, nt)}, true},
-		{"errDisc2", NewProduct("P1", 10, nt), 100, []Product{NewProduct("P2", 90, nt)}, true},
-		{"errDisc3", NewProduct("P1", 10, nt), 101, []Product{NewProduct("P2", 90, nt)}, true},
-		{"errDisc4", NewProduct("P1", 10, nt), 99.12456, []Product{NewProduct("P2", 90, nt)}, true},
-		{"errDisc5", NewProduct("P1", 10, nt), 99.00001, []Product{NewProduct("P2", 90, nt)}, true},
-		{"errDisc6", NewProduct("P1", 10, nt), 200, []Product{NewProduct("P2", 90, nt)}, true},
-		{"negDiscount", NewProduct("P1", 10, nt), -1, []Product{NewProduct("P2", 90, nt)}, true},
+		{"errDisc", NewProduct("P1", 10, nt), 0, BundleNormal, []Product{NewProduct("P2", 90, nt)}, true},
+		{"errDisc2", NewProduct("P1", 10, nt), 100, BundleNormal, []Product{NewProduct("P2", 90, nt)}, true},
+		{"errDisc3", NewProduct("P1", 10, nt), 101, BundleNormal, []Product{NewProduct("P2", 90, nt)}, true},
+		{"errDisc4", NewProduct("P1", 10, nt), 99.12456, BundleNormal, []Product{NewProduct("P2", 90, nt)}, true},
+		{"errDisc5", NewProduct("P1", 10, nt), 99.00001, BundleNormal, []Product{NewProduct("P2", 90, nt)}, true},
+		{"errDisc6", NewProduct("P1", 10, nt), 200, BundleNormal, []Product{NewProduct("P2", 90, nt)}, true},
+		{"negDiscount", NewProduct("P1", 10, nt), -1, BundleNormal, []Product{NewProduct("P2", 90, nt)}, true},
 
-		{"nilProd", Product{}, 0, []Product{NewProduct("P2", 90, nt)}, true},
-		{"nilProd2", NewProduct("P1", 10, nt), 0, []Product{{}}, true},
-		{"nilProd3", NewProduct("P1", 10, nt), 0, []Product{NewProduct("P2", 90, nt), {}}, true},
-		{"nilProd4", NewProduct("P1", 10, nt), 0, []Product{{}, NewProduct("P2", 90, nt)}, true},
-		{"nilProd5", Product{}, 0, []Product{NewProduct("P2", 90, nt), {}}, true},
+		{"nilProd", Product{}, 0, BundleNormal, []Product{NewProduct("P2", 90, nt)}, true},
+		{"nilProd2", NewProduct("P1", 10, nt), 0, BundleNormal, []Product{{}}, true},
+		{"nilProd3", NewProduct("P1", 10, nt), 0, BundleNormal, []Product{NewProduct("P2", 90, nt), {}}, true},
+		{"nilProd4", NewProduct("P1", 10, nt), 0, BundleNormal, []Product{{}, NewProduct("P2", 90, nt)}, true},
+		{"nilProd5", Product{}, 0, BundleNormal, []Product{NewProduct("P2", 90, nt), {}}, true},
 		// prem
-		{"defaultPrem", NewProduct("P1", 10, nt), 1, []Product{NewProduct("P2", 90, pt)}, false},
-		{"errDiscPrem2", NewProduct("P1", 10, pt), 200, []Product{NewProduct("P2", 90, nt)}, true},
-		{"nilProdPrem3", Product{}, 0, []Product{NewProduct("P2", 90, pt), {}}, true},
+		{"defaultPrem", NewProduct("P1", 10, nt), 1, BundleNormal, []Product{NewProduct("P2", 90, pt)}, false},
+		{"errDiscPrem2", NewProduct("P1", 10, pt), 200, BundleNormal, []Product{NewProduct("P2", 90, nt)}, true},
+		{"nilProdPrem3", Product{}, 0, BundleNormal, []Product{NewProduct("P2", 90, pt), {}}, true},
 
 		// sampled
-		{"defaultSampled", NewProduct("P1", 10, nt), 1, []Product{NewProduct("P2", 90, st)}, false},
-		{"errSampled", NewProduct("P1", 10, st), 1, []Product{NewProduct("P2", 90, nt)}, true},
-		{"errSampled2", NewProduct("P1", 10, nt), 1, []Product{NewProduct("P2", 90, st), NewProduct("P2", 90, st)}, true},
+		{"defaultSampled", NewProduct("P1", 10, nt), 1, BundleSample, []Product{NewProduct("P2", 90, st)}, false},
+		{"errSampled", NewProduct("P1", 10, st), 1, BundleSample, []Product{NewProduct("P2", 90, nt)}, true},
+		{"errSampled2", NewProduct("P1", 10, nt), 1, BundleSample, []Product{NewProduct("P2", 90, st), NewProduct("P2", 90, st)}, true},
 	}
 
 	// test
@@ -150,9 +147,9 @@ func TestShop_AddBundle(t *testing.T) {
 				t.Errorf("AddBundle() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if !tt.wantErr && !reflect.DeepEqual(NewBundle(tt.main, tt.discount, tt.additional...), m.Bundles[tt.name]) {
+			if !tt.wantErr && !reflect.DeepEqual(NewBundle(tt.main, tt.discount, tt.bundleType, tt.additional...), m.Bundles[tt.name]) {
 				t.Errorf("AddBundle() wrong bundle added = %v get = %v",
-					NewBundle(tt.main, tt.discount, tt.additional...), m.Bundles[tt.name])
+					NewBundle(tt.main, tt.discount, tt.bundleType, tt.additional...), m.Bundles[tt.name])
 			}
 		})
 	}

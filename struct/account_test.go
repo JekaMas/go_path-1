@@ -35,7 +35,7 @@ func TestModifyAccountTypeFailed(t *testing.T) {
 	}
 
 	tests := []accountTest{
-		{testName: "Error Type", Account: Account{Name: "Bred", Balance: 100, Type: 5}, err: errors.New("incorrect type")},
+		{testName: "Error Type", Account: Account{Name: "Bred", Balance: 100, Type: 100}, err: ErrorAccountInvalidType},
 	}
 	testShop := NewMarket()
 	testShop.Accounts["Bred"] = Account{
