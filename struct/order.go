@@ -21,7 +21,10 @@ func (m *Market) CalculateOrder(userName string, order Order) (float32, error) {
 		return 0, errors.New("products in the order is nil")
 	}
 
+	m.accountsMutex.RLock()
 	account, err := m.GetAccount(userName)
+	m.accountsMutex.RUnlock()
+
 	if err != nil {
 		return 0, errors.Wrap(err, "cannot calculate on a nil account")
 	}
@@ -29,9 +32,11 @@ func (m *Market) CalculateOrder(userName string, order Order) (float32, error) {
 	// cache key
 	key := orderKey(account, order)
 	// if exists, get from cache
+	m.orderCacheMutex.RLock()
 	if amount, ok := m.OrdersCache[key]; ok {
 		return amount, nil
 	}
+	m.orderCacheMutex.RUnlock()
 
 	// products
 	productsPrice := float32(0)
@@ -68,7 +73,10 @@ func (m *Market) CalculateOrder(userName string, order Order) (float32, error) {
 	}
 
 	amount := productsPrice + bundlesPrice
+
+	m.orderCacheMutex.Lock()
 	m.OrdersCache[key] = amount
+	m.orderCacheMutex.Unlock()
 
 	return amount, nil
 }
@@ -79,6 +87,9 @@ func (m *Market) PlaceOrder(userName string, order Order) error {
 	if err != nil {
 		return errors.Wrap(err, "error during order calculation")
 	}
+
+	m.accountsMutex.Lock()
+	defer m.accountsMutex.Unlock()
 
 	acc, err := m.GetAccount(userName)
 	if err != nil {

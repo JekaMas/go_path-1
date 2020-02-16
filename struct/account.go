@@ -30,8 +30,11 @@ func (m *Market) Register(userName string) error {
 	if _, err := m.GetAccount(userName); err == nil { // no error with get
 		return ErrorAccountExists
 	}
-
 	acc := NewAccount(userName)
+
+	m.accountsMutex.Lock()
+	defer m.accountsMutex.Unlock()
+
 	return m.SetAccount(userName, acc)
 }
 
@@ -40,6 +43,9 @@ func (m *Market) AddBalance(userName string, sum float32) error {
 	if sum < 0 {
 		return ErrorAccountAddNegativeBalance
 	}
+
+	m.accountsMutex.Lock()
+	defer m.accountsMutex.Unlock()
 
 	acc, err := m.GetAccount(userName)
 	if err != nil {
@@ -56,6 +62,9 @@ func (m *Market) ModifyAccountType(userName string, accountType AccountType) err
 		return ErrorAccountInvalidType
 	}
 
+	m.accountsMutex.Lock()
+	defer m.accountsMutex.Unlock()
+
 	acc, err := m.GetAccount(userName)
 	if err != nil {
 		return errors.Wrap(err, "can't modify nil account")
@@ -67,7 +76,10 @@ func (m *Market) ModifyAccountType(userName string, accountType AccountType) err
 
 func (m *Market) Balance(userName string) (float32, error) {
 
+	m.accountsMutex.RLock()
 	acc, err := m.GetAccount(userName)
+	m.accountsMutex.RUnlock()
+
 	if err != nil {
 		return 0, errors.Wrap(err, "can't get balance of the nil account")
 	}
@@ -77,9 +89,13 @@ func (m *Market) Balance(userName string) (float32, error) {
 
 func (m *Market) GetAccounts(sortType AccountSortType) []Account {
 	var accs []Account
+
+	m.accountsMutex.RLock()
 	for _, acc := range m.Accounts {
 		accs = append(accs, acc)
 	}
+	m.accountsMutex.RUnlock()
+
 	// compare function
 	var less func(i, j int) bool
 

@@ -27,6 +27,9 @@ func (m *Market) AddProduct(p Product) error {
 		return errors.Wrap(err, "invalid check product")
 	}
 
+	m.productsMutex.Lock()
+	defer m.productsMutex.Unlock()
+
 	if _, err := m.GetProduct(p.Name); err == nil {
 		return ErrorProductAlreadyExists
 	}
@@ -39,6 +42,9 @@ func (m *Market) ModifyProduct(p Product) error {
 		return errors.Wrap(err, "invalid product check")
 	}
 
+	m.productsMutex.Lock()
+	defer m.productsMutex.Unlock()
+
 	if _, err := m.GetProduct(p.Name); err != nil {
 		return errors.Wrap(err, "cannot modify nil product")
 	}
@@ -46,6 +52,9 @@ func (m *Market) ModifyProduct(p Product) error {
 }
 
 func (m *Market) RemoveProduct(name string) error {
+
+	m.productsMutex.Lock()
+	defer m.productsMutex.Unlock()
 
 	if _, err := m.GetProduct(name); err != nil {
 		return errors.Wrap(err, "cannot delete nil product")

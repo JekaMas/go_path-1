@@ -37,6 +37,9 @@ func (m *Market) AddBundle(name string, main Product, discount float32, addition
 
 	b := NewBundle(main, discount, bundleType, additional...)
 
+	m.bundlesMutex.Lock()
+	defer m.bundlesMutex.Unlock()
+
 	if _, err := m.GetBundle(name); err == nil {
 		return ErrorBundleExists
 	}
@@ -49,6 +52,9 @@ func (m *Market) ChangeDiscount(name string, discount float32) error {
 		return ErrorInvalidDiscount
 	}
 
+	m.bundlesMutex.Lock()
+	defer m.bundlesMutex.Unlock()
+
 	bundle, err := m.GetBundle(name)
 	if err != nil {
 		return errors.Wrap(err, "can't change discount of the nil bundle")
@@ -60,7 +66,11 @@ func (m *Market) ChangeDiscount(name string, discount float32) error {
 
 func (m *Market) RemoveBundle(name string) error {
 
+	m.bundlesMutex.Lock()
+	defer m.bundlesMutex.Unlock()
+
 	_, err := m.GetBundle(name)
+
 	if err != nil {
 		return errors.Wrap(err, "can't delete nil bundle")
 	}

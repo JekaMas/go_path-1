@@ -73,6 +73,8 @@ type Market struct {
 
 	OrdersCache map[string]float32 // map[key]sum
 
-	accountsMutex sync.RWMutex
-	productsMutex sync.RWMutex
+	accountsMutex   sync.RWMutex
+	productsMutex   sync.RWMutex
+	bundlesMutex    sync.RWMutex
+	orderCacheMutex sync.RWMutex
 }
