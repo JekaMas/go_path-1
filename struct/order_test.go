@@ -42,7 +42,7 @@ func TestCalculateOrderSuccess(t *testing.T) {
 					},
 				},
 			},
-			total: 125,
+			total: 100,
 		},
 		{
 			testName: "ProductsShouldBeInitialize",
@@ -67,7 +67,7 @@ func TestCalculateOrderSuccess(t *testing.T) {
 					},
 				},
 			},
-			total: 125,
+			total: 100,
 		},
 	}
 	testShop := NewMarket()
@@ -85,7 +85,7 @@ func TestCalculateOrderSuccess(t *testing.T) {
 				t.Fatalf("Test it should be success, error: %v", err)
 			}
 			if total != test.total {
-				t.Errorf("Error, type not correct: %v != %v", total, test.total)
+				t.Errorf("Error, wrong sum: %v != %v", total, test.total)
 			}
 		})
 	}
@@ -132,7 +132,7 @@ func TestPlaceOrderFailed(t *testing.T) {
 				},
 				Bundles: nil,
 			},
-			err: ErrorIncorrectAccountType,
+			err: ErrorAccountInvalidType,
 		},
 	}
 
@@ -305,9 +305,9 @@ func TestShop_CalculateOrder(t *testing.T) {
 			NewOrder(nil, nil),
 			0, true,
 		},
-		{"err", acc.Name,
+		{"nilProducts", acc.Name,
 			NewOrder(nil, []Bundle{}),
-			0, true,
+			0, false,
 		},
 		{"errSampled", acc.Name,
 			NewOrder([]Product{NewProduct("P1", 90, st), NewProduct("P2", 10, nt)}, nil),

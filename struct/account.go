@@ -10,6 +10,7 @@ var (
 	ErrorAccountNotRegistered = errors.New("account is not registered")
 	ErrorAccountExists        = errors.New("account already exists")
 	ErrorAccountInvalidType   = errors.New("account type is invalid")
+	ErrorAccountInvalidName   = errors.New("account is invalid")
 )
 
 /* -- AccountManager ------------------------------------------------------------------------------------------------ */
@@ -116,4 +117,16 @@ func (m *Market) GetAccounts(sortType AccountSortType) []Account {
 
 	sort.Slice(accs, less)
 	return accs
+}
+
+func checkAccount(acc Account) error {
+	if _, ok := AccountTypeMap[acc.Type]; !ok {
+		return ErrorAccountInvalidType
+	}
+
+	if len(acc.Name) == 0 {
+		return ErrorAccountInvalidName
+	}
+
+	return nil
 }

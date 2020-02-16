@@ -17,7 +17,7 @@ func NewOrder(products []Product, bundles []Bundle) Order {
 
 func (m *Market) CalculateOrder(userName string, order Order) (float32, error) {
 
-	if order.Products == nil {
+	if order.Products == nil && order.Bundles == nil {
 		return 0, errors.New("products in the order is nil")
 	}
 
@@ -40,6 +40,9 @@ func (m *Market) CalculateOrder(userName string, order Order) (float32, error) {
 		if product.Type == ProductSampled {
 			return 0, errors.New("sampled product cannot be bought without bundle")
 		}
+		if product.Price < 0 {
+			return 0, ErrorNegativeProductPrice
+		}
 
 		discount := DiscountMap[product.Type][account.Type]
 		productsPrice += product.Price * (1 - discount*0.01)
@@ -55,6 +58,10 @@ func (m *Market) CalculateOrder(userName string, order Order) (float32, error) {
 
 		price := float32(0)
 		for _, product := range bundle.Products {
+			if product.Price < 0 {
+				return 0, ErrorNegativeProductPrice
+			}
+
 			price += product.Price
 		}
 		bundlesPrice += price * (1 - bundle.Discount*0.01)
@@ -76,6 +83,9 @@ func (m *Market) PlaceOrder(userName string, order Order) error {
 	acc, ok := m.Accounts[userName]
 	if !ok {
 		return ErrorAccountNotRegistered
+	}
+	if err := checkAccount(acc); err != nil {
+		return errors.Wrap(err, "check account error")
 	}
 
 	if acc.Balance < amount {
