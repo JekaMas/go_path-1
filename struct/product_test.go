@@ -6,11 +6,6 @@ import (
 	"testing"
 )
 
-var (
-	ErrorProductExist           = errors.New("product already exists")
-	ErrorProductSampleWithPrice = errors.New("sample not has price")
-)
-
 func TestAddProductFailed(t *testing.T) {
 	type productTest struct {
 		testName string
@@ -19,7 +14,7 @@ func TestAddProductFailed(t *testing.T) {
 	}
 
 	tests := []productTest{
-		{testName: "FreeProduct", Product: Product{Name: "Free", Price: 0, Type: ProductNormal}, err: ErrorNegativeProductPrice},
+		{testName: "FreeProduct", Product: Product{Name: "Free", Price: 0, Type: ProductNormal}, err: ErrorProductNegativePrice},
 		{testName: "SampleWithPrice", Product: Product{Name: "Sample", Price: 100, Type: ProductSampled}, err: ErrorProductSampleWithPrice},
 	}
 
@@ -46,7 +41,7 @@ func TestModifyProductFailed(t *testing.T) {
 	}
 
 	tests := []productTest{
-		{testName: "FreeProduct", Product: Product{Name: "Pineapple", Price: 0, Type: ProductNormal}, err: ErrorNegativeProductPrice},
+		{testName: "FreeProduct", Product: Product{Name: "Pineapple", Price: 0, Type: ProductNormal}, err: ErrorProductNegativePrice},
 		{testName: "SampleWithPrice", Product: Product{Name: "Pineapple", Price: 100, Type: ProductSampled}, err: errors.New("sample not has price")},
 	}
 

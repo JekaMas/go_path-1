@@ -5,11 +5,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-var ErrorBundleExists = errors.New("bundle already exists")
-var ErrorBundleNotExists = errors.New("bundle not exists")
-var ErrorInvalidDiscount = errors.New("invalid discount")
-var ErrorEmptyField = errors.New("empty field")
-var ErrorNegativeProductPrice = errors.New("product price is negative")
+var (
+	ErrorInvalidDiscount = errors.New("invalid discount")
+	ErrorEmptyField      = errors.New("empty field")
+)
 
 func NewMarket() Market {
 	return Market{

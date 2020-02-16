@@ -4,13 +4,15 @@ import (
 	"github.com/pkg/errors"
 	"sort"
 	"strings"
+	"unicode"
 )
 
 var (
-	ErrorAccountNotRegistered = errors.New("account is not registered")
-	ErrorAccountExists        = errors.New("account already exists")
-	ErrorAccountInvalidType   = errors.New("account type is invalid")
-	ErrorAccountInvalidName   = errors.New("account is invalid")
+	ErrorAccountAddNegativeBalance = errors.New("can't add negative balance")
+	ErrorAccountNotRegistered      = errors.New("account is not registered")
+	ErrorAccountInvalidType        = errors.New("account type is invalid")
+	ErrorAccountInvalidName        = errors.New("account is invalid")
+	ErrorAccountExists             = errors.New("account already exists")
 )
 
 /* -- AccountManager ------------------------------------------------------------------------------------------------ */
@@ -25,69 +27,52 @@ func NewAccount(userName string) Account {
 
 func (m *Market) Register(userName string) error {
 
-	if len(userName) == 0 {
-		return ErrorEmptyField
-	}
-
-	if _, ok := m.Accounts[userName]; ok {
+	if _, err := m.GetAccount(userName); err == nil { // no error with get
 		return ErrorAccountExists
 	}
 
 	acc := NewAccount(userName)
-	m.Accounts[userName] = acc
-	return nil
+	return m.SetAccount(userName, acc)
 }
 
 func (m *Market) AddBalance(userName string, sum float32) error {
 
 	if sum < 0 {
-		return errors.New("cannot add negative sum")
+		return ErrorAccountAddNegativeBalance
 	}
 
-	if _, ok := m.Accounts[userName]; !ok {
-		return ErrorAccountNotRegistered
+	acc, err := m.GetAccount(userName)
+	if err != nil {
+		return errors.Wrap(err, "can't add balance to the nil account")
 	}
 
-	acc := m.Accounts[userName]
 	acc.Balance += sum
-
-	m.Accounts[userName] = acc
-	return nil
+	return m.SetAccount(userName, acc)
 }
 
 func (m *Market) ModifyAccountType(userName string, accountType AccountType) error {
 
-	if _, ok := m.Accounts[userName]; !ok {
-		return ErrorAccountNotRegistered
-	}
-	if _, ok := AccountTypeMap[accountType]; !ok {
+	if _, ok := AccountTypeMap[accountType]; !ok { // check type itself
 		return ErrorAccountInvalidType
 	}
 
-	acc := m.Accounts[userName]
-	acc.Type = accountType
+	acc, err := m.GetAccount(userName)
+	if err != nil {
+		return errors.Wrap(err, "can't modify nil account")
+	}
 
-	m.Accounts[userName] = acc
-	return nil
+	acc.Type = accountType
+	return m.SetAccount(userName, acc)
 }
 
 func (m *Market) Balance(userName string) (float32, error) {
 
-	if _, ok := m.Accounts[userName]; !ok {
-		return 0, ErrorAccountNotRegistered
+	acc, err := m.GetAccount(userName)
+	if err != nil {
+		return 0, errors.Wrap(err, "can't get balance of the nil account")
 	}
 
-	return m.Accounts[userName].Balance, nil
-}
-
-func (m *Market) GetAccount(name string) (Account, error) {
-	acc, ok := m.Accounts[name]
-
-	if !ok {
-		return Account{}, ErrorAccountNotRegistered
-	}
-
-	return acc, nil
+	return acc.Balance, nil
 }
 
 func (m *Market) GetAccounts(sortType AccountSortType) []Account {
@@ -117,6 +102,52 @@ func (m *Market) GetAccounts(sortType AccountSortType) []Account {
 
 	sort.Slice(accs, less)
 	return accs
+}
+
+/* --- Interface ---------------------------------------------------------------------------------------------------- */
+
+func (m *Market) GetAccount(name string) (Account, error) {
+	acc, ok := m.Accounts[name]
+
+	if !ok {
+		return Account{}, ErrorAccountNotRegistered
+	}
+
+	return acc, nil
+}
+
+func (m *Market) SetAccount(userName string, account Account) error {
+
+	if err := checkName(userName); err != nil {
+		return errors.Wrap(err, "can't set invalid account")
+	}
+	if err := checkAccount(account); err != nil {
+		return errors.Wrap(err, "can't set invalid account")
+	}
+
+	m.Accounts[userName] = account
+	return nil
+}
+
+/* --- Checks ------------------------------------------------------------------------------------------------------- */
+
+func checkName(name string) error {
+	if len(name) == 0 {
+		return ErrorEmptyField
+	}
+
+	// TODO max chars count
+	//if len(userName) > MAX_NAME_LENGTH {
+	//	return ErrorAccountInvalidName
+	//}
+
+	for _, r := range name { // for each rune
+		if !(unicode.IsLetter(r) || unicode.IsDigit(r)) {
+			return ErrorAccountInvalidName
+		}
+	}
+
+	return nil
 }
 
 func checkAccount(acc Account) error {

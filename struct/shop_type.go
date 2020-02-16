@@ -1,5 +1,7 @@
 package shop
 
+import "sync"
+
 const (
 	ProductNormal ProductType = iota
 	ProductPremium
@@ -70,4 +72,7 @@ type Market struct {
 	Bundles  map[string]Bundle  // map[bundleName]Bundle
 
 	OrdersCache map[string]float32 // map[key]sum
+
+	accountsMutex sync.RWMutex
+	productsMutex sync.RWMutex
 }

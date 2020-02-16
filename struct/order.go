@@ -41,7 +41,7 @@ func (m *Market) CalculateOrder(userName string, order Order) (float32, error) {
 			return 0, errors.New("sampled product cannot be bought without bundle")
 		}
 		if product.Price < 0 {
-			return 0, ErrorNegativeProductPrice
+			return 0, ErrorProductNegativePrice
 		}
 
 		discount := DiscountMap[product.Type][account.Type]
@@ -59,7 +59,7 @@ func (m *Market) CalculateOrder(userName string, order Order) (float32, error) {
 		price := float32(0)
 		for _, product := range bundle.Products {
 			if product.Price < 0 {
-				return 0, ErrorNegativeProductPrice
+				return 0, ErrorProductNegativePrice
 			}
 
 			price += product.Price
@@ -80,12 +80,9 @@ func (m *Market) PlaceOrder(userName string, order Order) error {
 		return errors.Wrap(err, "error during order calculation")
 	}
 
-	acc, ok := m.Accounts[userName]
-	if !ok {
-		return ErrorAccountNotRegistered
-	}
-	if err := checkAccount(acc); err != nil {
-		return errors.Wrap(err, "check account error")
+	acc, err := m.GetAccount(userName)
+	if err != nil {
+		return errors.Wrap(err, "can't place order to the nil account")
 	}
 
 	if acc.Balance < amount {
@@ -93,9 +90,10 @@ func (m *Market) PlaceOrder(userName string, order Order) error {
 	}
 
 	acc.Balance -= amount
-	m.Accounts[userName] = acc
-	return nil
+	return m.SetAccount(userName, acc)
 }
+
+/* -- Util ---------------------------------------------------------------------------------------------------------- */
 
 func orderKey(account Account, order Order) string {
 	b := new(bytes.Buffer)
