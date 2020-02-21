@@ -6,6 +6,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+var (
+	ErrorPriceNotNegative     = errors.New("total price not be negative/zero")
+	ErrorIncorrectAccountType = errors.New("incorrect account type")
+)
+
 /* -- OrderManager -------------------------------------------------------------------------------------------------- */
 
 func NewOrder(products []Product, bundles []Bundle) Order {

@@ -4,7 +4,6 @@ import (
 	"github.com/pkg/errors"
 	"sort"
 	"strings"
-	"unicode"
 )
 
 var (
@@ -146,25 +145,6 @@ func (m *Market) SetAccount(userName string, account Account) error {
 }
 
 /* --- Checks ------------------------------------------------------------------------------------------------------- */
-
-func checkName(name string) error {
-	if len(name) == 0 {
-		return ErrorEmptyField
-	}
-
-	// TODO max chars count
-	//if len(userName) > MAX_NAME_LENGTH {
-	//	return ErrorAccountInvalidName
-	//}
-
-	for _, r := range name { // for each rune
-		if !(unicode.IsLetter(r) || unicode.IsDigit(r)) {
-			return ErrorAccountInvalidName
-		}
-	}
-
-	return nil
-}
 
 func checkAccount(acc Account) error {
 	if _, ok := AccountTypeMap[acc.Type]; !ok {

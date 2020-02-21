@@ -6,11 +6,6 @@ import (
 	"testing"
 )
 
-var (
-	ErrorPriceNotNegative     = errors.New("total price not be negative/zero")
-	ErrorIncorrectAccountType = errors.New("incorrect account type")
-)
-
 func TestCalculateOrderSuccess(t *testing.T) {
 	type calcTest struct {
 		testName string
