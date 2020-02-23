@@ -15,7 +15,6 @@ import (
 var (
 	ErrorInvalidDiscount = errors.New("invalid discount")
 	ErrorEmptyField      = errors.New("empty field")
-	ErrorTimeout         = errors.New("timeout")
 )
 
 func NewMarket() Market {

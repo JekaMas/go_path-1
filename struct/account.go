@@ -4,7 +4,6 @@ import (
 	"github.com/pkg/errors"
 	"sort"
 	"strings"
-	"time"
 )
 
 var (
@@ -26,27 +25,18 @@ func NewAccount(userName string) Account {
 }
 
 func (m *Market) Register(userName string) error {
-
-	resChan := make(chan error)
-
-	go func() {
-		if _, err := m.GetAccount(userName); err == nil { // no error with get
-			resChan <- ErrorAccountExists
-		}
-		acc := NewAccount(userName)
-
-		m.accountsMutex.Lock()
-		defer m.accountsMutex.Unlock()
-
-		resChan <- m.SetAccount(userName, acc)
-	}()
-
-	select {
-	case res := <-resChan:
-		return res
-	case <-time.After(time.Second):
-		return ErrorTimeout
+	m.accountsMutex.RLock()
+	if _, err := m.GetAccount(userName); err == nil { // no error with get
+		return ErrorAccountExists
 	}
+	m.accountsMutex.RUnlock()
+
+	acc := NewAccount(userName)
+
+	m.accountsMutex.Lock()
+	defer m.accountsMutex.Unlock()
+
+	return m.SetAccount(userName, acc)
 }
 
 func (m *Market) AddBalance(userName string, sum float32) error {
