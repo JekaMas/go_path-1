@@ -35,11 +35,11 @@ func TestShop_RegisterRace(t *testing.T) {
 	for _, name := range names {
 		// add each name in goroutine
 		go func(name string) {
+			defer wg.Done()
 			err := m.Register(name)
 			if err != nil {
 				t.Error(err)
 			}
-			wg.Done()
 		}(name) // copy value
 	}
 
@@ -66,11 +66,11 @@ func TestShop_BalanceRace(t *testing.T) {
 
 	for _, name := range names {
 		go func(name string) {
+			defer wg.Done()
 			_, err := m.Balance(name)
 			if err != nil {
 				t.Error(err)
 			}
-			wg.Done()
 		}(name)
 	}
 
@@ -109,11 +109,11 @@ func TestShop_AddBalanceRace(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			go func(name string, sum float32) {
+				defer wg.Done()
 				err := m.AddBalance(name, sum)
 				if err != nil {
 					t.Error(err) // fixme race in tests lol
 				}
-				wg.Done()
 			}(tt.name, tt.sum)
 		})
 	}
@@ -149,11 +149,11 @@ func TestShop_GetAccountsRace(t *testing.T) {
 	// test
 	for _, typ := range types {
 		go func(typ shop.AccountSortType) {
+			defer wg.Done()
 			accs := m.GetAccounts(typ)
 			if len(accs) == 0 {
 				t.Error("empty accounts")
 			}
-			wg.Done()
 		}(typ)
 	}
 

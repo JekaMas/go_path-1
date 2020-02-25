@@ -31,11 +31,11 @@ func TestShop_AddProductRace(t *testing.T) {
 	// test
 	for _, product := range products {
 		go func(product shop.Product) {
+			defer wg.Done()
 			err := m.AddProduct(product)
 			if err != nil {
 				t.Error(err)
 			}
-			wg.Done()
 		}(product)
 	}
 
@@ -65,11 +65,11 @@ func TestShop_ModifyProductRace(t *testing.T) {
 	// test
 	for _, product := range products {
 		go func(product shop.Product) {
+			defer wg.Done()
 			err := m.ModifyProduct(product)
 			if err != nil {
 				t.Error(err)
 			}
-			wg.Done()
 		}(product)
 	}
 
@@ -100,6 +100,7 @@ func TestShop_RemoveProductRace(t *testing.T) {
 	// test
 	for _, name := range names {
 		go func(name string) { // rand delay?
+			defer wg.Done()
 			delay := time.Millisecond * 2 * time.Duration(rand.Int31n(300))
 			// t.Log("RUN ", name, delay)
 			time.Sleep(delay)
@@ -107,7 +108,6 @@ func TestShop_RemoveProductRace(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			wg.Done()
 		}(name)
 	}
 

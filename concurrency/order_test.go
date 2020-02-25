@@ -69,11 +69,11 @@ func TestShop_CalculateOrderRace(t *testing.T) {
 
 	for _, o := range orders { // fixme fall with timeout
 		go func(o order) {
+			defer wg.Done()
 			_, err := m.CalculateOrder(o.accountName, o.order)
 			if err != nil {
 				t.Error(err)
 			}
-			wg.Done()
 		}(o)
 	}
 
@@ -143,11 +143,11 @@ func TestShop_PlaceOrder(t *testing.T) {
 
 	for _, o := range orders { // fixme fall with timeout
 		go func(o order) {
+			defer wg.Done()
 			err := m.PlaceOrder(o.accountName, o.order)
 			if err != nil {
 				t.Error(err)
 			}
-			wg.Done()
 		}(o)
 	}
 

@@ -38,11 +38,11 @@ func TestShop_AddBundleRace(t *testing.T) {
 	// test
 	for _, b := range bundles {
 		go func(main shop.Product, discount float32, additional []shop.Product) {
+			defer wg.Done()
 			err := m.AddBundle(main.Name, main, discount, additional...)
 			if err != nil {
 				t.Error(err)
 			}
-			wg.Done()
 		}(b.main, b.discount, b.additional)
 	}
 
@@ -76,11 +76,11 @@ func TestShop_ChangeDiscountRace(t *testing.T) {
 	// test
 	for _, tt := range tests {
 		go func(name string, discount float32) {
+			defer wg.Done()
 			err := m.ChangeDiscount(name, discount)
 			if err != nil {
 				t.Error(err)
 			}
-			wg.Done()
 		}(tt.bundleName, tt.discount)
 	}
 
@@ -109,12 +109,12 @@ func TestShop_RemoveBundleRace(t *testing.T) {
 	// test
 	for _, name := range names {
 		go func(name string) {
+			defer wg.Done()
 			time.Sleep(time.Millisecond)
 			err := m.RemoveBundle(name)
 			if err != nil {
 				t.Error(err)
 			}
-			wg.Done()
 		}(name)
 	}
 
