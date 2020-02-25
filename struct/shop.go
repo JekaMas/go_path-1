@@ -25,7 +25,7 @@ type ImportProductsError struct {
 }
 
 type ImportAccountsError struct {
-	product Product
+	account Account
 	err     error
 }
 
@@ -183,48 +183,71 @@ func (m *Market) ExportProductsCSV() ([]byte, error) {
 }
 
 // Accounts
-func (m *Market) ImportAccountsCSV(data []byte) error {
-
-	accounts := make(map[string]Account)
+func (m *Market) ImportAccountsCSV(data []byte) (errs []ImportAccountsError) { // fixme code duplicate
 
 	reader := csv.NewReader(bytes.NewReader(data))
-	// headers
-	_, err := reader.Read()
-	// end of file at beginning
+	records, err := reader.ReadAll() // fixme read big data?
 	if err == io.EOF {
-		return nil
+		return append(errs, ImportAccountsError{Account{}, err})
 	}
-	// io error
 	if err != nil {
-		return errors.Wrap(err, "import product error")
+		return append(errs, ImportAccountsError{Account{}, errors.Wrap(err, "import product error")})
+	}
+	if len(records) < 2 {
+		return append(errs, ImportAccountsError{Account{}, errors.New("empty data")})
 	}
 
-	for { // read each record from csv
-		record, err := reader.Read()
-		// end of file
-		if err == io.EOF {
-			break
-		}
-		// io error
-		if err != nil {
-			return errors.Wrap(err, "import product error")
+	records = records[1:]
+
+	batchSize := 100
+	length := len(records)
+	rem := length % batchSize // remainder
+
+	count := length / batchSize // goroutines count
+	if rem > 0 {
+		count++
+	}
+
+	resChan := make(chan map[string]Account, 1)
+	errChan := make(chan ImportAccountsError, 1)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	for i := 0; i < length; i += batchSize {
+
+		start := i
+		end := start
+
+		if length < batchSize {
+			end = rem
+		} else if i+batchSize > length {
+			end += rem
+		} else {
+			end += batchSize
 		}
 
-		// first - account name
-		name := record[0]
-		// second - balance
-		balance, err := strconv.ParseFloat(record[1], 32)
-		if err != nil {
-			return errors.Wrap(err, "parse error")
+		go m.ImportAccountsCSVRecords(ctx, records[start:end], resChan, errChan)
+	}
+
+	// gather data
+	accounts := make(map[string]Account)
+
+	for i := 0; i < count; i++ {
+		select {
+		case result := <-resChan:
+			// union two maps
+			for key := range result {
+				accounts[key] = result[key]
+			}
+		case err := <-errChan:
+			cancel()
+			errs = append(errs, err)
 		}
-		// third - account type
-		typ, err := strconv.Atoi(record[2])
-		if err != nil {
-			return errors.Wrap(err, "parse error")
-		}
-		// add new product to temporary map
-		account := Account{name, float32(balance), AccountType(typ)}
-		accounts[account.Name] = account
+	}
+
+	if len(errs) > 0 {
+		return
 	}
 
 	// lock accounts to write
@@ -236,6 +259,48 @@ func (m *Market) ImportAccountsCSV(data []byte) error {
 	}
 
 	return nil
+}
+
+func (m *Market) ImportAccountsCSVRecords(
+	ctx context.Context,
+	records [][]string,
+	resChan chan<- map[string]Account,
+	errChan chan<- ImportAccountsError) {
+
+	accounts := make(map[string]Account)
+
+	for _, record := range records { // read each record from csv
+		select {
+		case <-ctx.Done():
+			errChan <- ImportAccountsError{Account{}, ErrorCancelled}
+			return
+		default:
+		}
+
+		if len(record) < 3 {
+			errChan <- ImportAccountsError{Account{}, errors.New("not enough fields")}
+			return
+		}
+		// first - account name
+		userName := record[0]
+		// second - balance
+		balance, err := strconv.ParseFloat(record[1], 32)
+		if err != nil {
+			errChan <- ImportAccountsError{Account{userName, float32(balance), 0}, errors.Wrap(err, "parse error")}
+			return
+		}
+		// third - account type
+		typ, err := strconv.Atoi(record[2])
+		if err != nil {
+			errChan <- ImportAccountsError{Account{userName, float32(balance), AccountType(typ)}, errors.Wrap(err, "parse error")}
+			return
+		}
+		// add new account to the temporary map
+		account := Account{userName, float32(balance), AccountType(typ)}
+		accounts[userName] = account
+	}
+
+	resChan <- accounts
 }
 
 func (m *Market) ExportAccountsCSV() ([]byte, error) {
