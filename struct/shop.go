@@ -52,6 +52,7 @@ func (m *Market) Export() ([]byte, error) {
 func (m *Market) ImportProductsCSV(data []byte) (errs []ImportProductsError) {
 	// create new reader
 	reader := csv.NewReader(bytes.NewReader(data))
+
 	// read all data at once
 	records, err := reader.ReadAll() // fixme read big data?
 	// end of file at the beginning
@@ -62,13 +63,17 @@ func (m *Market) ImportProductsCSV(data []byte) (errs []ImportProductsError) {
 	if err != nil {
 		return append(errs, ImportProductsError{Product{}, errors.Wrap(err, "import product error")})
 	}
+
 	// with headers
 	if len(records) < 2 {
 		return append(errs, ImportProductsError{Product{}, errors.New("empty data")})
 	}
+
 	// skip headers
 	records = records[1:]
+
 	// steps per goroutine
+	//fixme: было бы здорово выделить это в отдельную функцию, которая принимает длину слайса, размер банча и возвращает [][2]int - массив индексов начала и конца подслайсов. Заодно эту логику тестами покрыть
 	batchSize := 1000
 	length := len(records)
 	rem := length % batchSize // remainder
@@ -261,6 +266,7 @@ func (m *Market) ImportAccountsCSV(data []byte) (errs []ImportAccountsError) { /
 	return nil
 }
 
+// fixme методов импорта и экспорта много. может стоит их разделить на 2 новых файла: shop_import.go, shop.export.go
 func (m *Market) ImportAccountsCSVRecords(
 	ctx context.Context,
 	records [][]string,

@@ -24,63 +24,25 @@ func NewAccount(userName string) Account {
 	}
 }
 
-func (m *Market) Register(userName string) error {
-	m.accountsMutex.RLock()
-	if _, err := m.GetAccount(userName); err == nil { // no error with get
-		return ErrorAccountExists
-	}
-	m.accountsMutex.RUnlock()
-
-	acc := NewAccount(userName)
-
-	m.accountsMutex.Lock()
-	defer m.accountsMutex.Unlock()
-
-	return m.SetAccount(userName, acc)
-}
-
 func (m *Market) AddBalance(userName string, sum float32) error {
-
 	if sum < 0 {
 		return ErrorAccountAddNegativeBalance
 	}
 
-	m.accountsMutex.Lock()
-	defer m.accountsMutex.Unlock()
-
-	acc, err := m.GetAccount(userName)
-	if err != nil {
-		return errors.Wrap(err, "can't add balance to the nil account")
-	}
-
-	acc.Balance += sum
-	return m.SetAccount(userName, acc)
+	return m.changeAccount(userName, addBalance(sum))
 }
 
 func (m *Market) ModifyAccountType(userName string, accountType AccountType) error {
-
-	if _, ok := AccountTypeMap[accountType]; !ok { // check type itself
+	if _, ok := AccountTypeMap[accountType]; !ok {
+		// check type itself
 		return ErrorAccountInvalidType
 	}
 
-	m.accountsMutex.Lock()
-	defer m.accountsMutex.Unlock()
-
-	acc, err := m.GetAccount(userName)
-	if err != nil {
-		return errors.Wrap(err, "can't modify nil account")
-	}
-
-	acc.Type = accountType
-	return m.SetAccount(userName, acc)
+	return m.changeAccount(userName, changeType(accountType))
 }
 
 func (m *Market) Balance(userName string) (float32, error) {
-
-	m.accountsMutex.RLock()
 	acc, err := m.GetAccount(userName)
-	m.accountsMutex.RUnlock()
-
 	if err != nil {
 		return 0, errors.Wrap(err, "can't get balance of the nil account")
 	}
@@ -89,13 +51,7 @@ func (m *Market) Balance(userName string) (float32, error) {
 }
 
 func (m *Market) GetAccounts(sortType AccountSortType) []Account {
-	var accs []Account
-
-	m.accountsMutex.RLock()
-	for _, acc := range m.Accounts {
-		accs = append(accs, acc)
-	}
-	m.accountsMutex.RUnlock()
+	accs := m.clone()
 
 	// compare function
 	var less func(i, j int) bool
@@ -119,31 +75,6 @@ func (m *Market) GetAccounts(sortType AccountSortType) []Account {
 
 	sort.Slice(accs, less)
 	return accs
-}
-
-/* --- Interface ---------------------------------------------------------------------------------------------------- */
-
-func (m *Market) GetAccount(name string) (Account, error) {
-	acc, ok := m.Accounts[name]
-
-	if !ok {
-		return Account{}, ErrorAccountNotRegistered
-	}
-
-	return acc, nil
-}
-
-func (m *Market) SetAccount(userName string, account Account) error {
-
-	if err := checkName(userName); err != nil {
-		return errors.Wrap(err, "can't set invalid account")
-	}
-	if err := checkAccount(account); err != nil {
-		return errors.Wrap(err, "can't set invalid account")
-	}
-
-	m.Accounts[userName] = account
-	return nil
 }
 
 /* --- Checks ------------------------------------------------------------------------------------------------------- */
