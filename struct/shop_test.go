@@ -1,38 +1,11 @@
 package shop
 
 import (
-	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"reflect"
 	"testing"
 )
 
 /* -- Importer, Exporter -------------------------------------------------------------------------------------------- */
-
-func TestMarket_ExportProductsCSV(t *testing.T) {
-
-	m := testMarket()
-
-	fmt.Println("=================================")
-	m.ExportProductsCSV()
-	fmt.Println("=================================")
-
-}
-
-func TestMarket_ImportProductsCSV(t *testing.T) {
-
-	m := testMarket()
-	m2 := NewMarket()
-
-	data, _ := m.ExportProductsCSV()
-	err := m2.ImportProductsCSV(data)
-
-	if err != nil {
-		t.Error(err)
-	}
-
-	spew.Dump(m2.Products)
-}
 
 func TestShop_Export(t *testing.T) {
 

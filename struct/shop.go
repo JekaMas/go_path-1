@@ -2,6 +2,7 @@ package shop
 
 import (
 	"bytes"
+	"context"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
@@ -15,7 +16,18 @@ import (
 var (
 	ErrorInvalidDiscount = errors.New("invalid discount")
 	ErrorEmptyField      = errors.New("empty field")
+	ErrorCancelled       = errors.New("cancelled")
 )
+
+type ImportProductsError struct {
+	product Product
+	err     error
+}
+
+type ImportAccountsError struct {
+	product Product
+	err     error
+}
 
 func NewMarket() Market {
 	return Market{
@@ -37,59 +49,128 @@ func (m *Market) Export() ([]byte, error) {
 }
 
 // Products
-func (m *Market) ImportProductsCSV(data []byte) error {
-
-	products := make(map[string]Product)
-
+func (m *Market) ImportProductsCSV(data []byte) (errs []ImportProductsError) {
+	// create new reader
 	reader := csv.NewReader(bytes.NewReader(data))
-	// headers
-	_, err := reader.Read()
-	// end of file at beginning
+	// read all data at once
+	records, err := reader.ReadAll() // fixme read big data?
+	// end of file at the beginning
 	if err == io.EOF {
-		return nil
+		return append(errs, ImportProductsError{Product{}, err})
 	}
 	// io error
 	if err != nil {
-		return errors.Wrap(err, "import product error")
+		return append(errs, ImportProductsError{Product{}, errors.Wrap(err, "import product error")})
+	}
+	// with headers
+	if len(records) < 2 {
+		return append(errs, ImportProductsError{Product{}, errors.New("empty data")})
+	}
+	// skip headers
+	records = records[1:]
+	// steps per goroutine
+	batchSize := 1000
+	length := len(records)
+	rem := length % batchSize // remainder
+	// goroutines count
+	count := length / batchSize
+	if rem > 0 {
+		count++
+	}
+	// result channels
+	resChan := make(chan map[string]Product, 1)
+	errChan := make(chan ImportProductsError, 1)
+	// context
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	for i := 0; i < length; i += batchSize {
+
+		start := i
+		end := start
+
+		if length < batchSize {
+			end = rem
+		} else if i+batchSize > length {
+			end += rem
+		} else {
+			end += batchSize
+		}
+
+		go m.ImportProductsCSVRecords(ctx, records[start:end], resChan, errChan)
 	}
 
-	for { // read each record from csv
-		record, err := reader.Read()
-		// end of file
-		if err == io.EOF {
-			break
+	// gather data
+	products := make(map[string]Product)
+
+	for i := 0; i < count; i++ {
+		select {
+		case result := <-resChan:
+			// union two maps
+			for key := range result {
+				products[key] = result[key]
+			}
+		case err := <-errChan:
+			cancel()
+			errs = append(errs, err)
 		}
-		// io error
-		if err != nil {
-			return errors.Wrap(err, "import product error")
+	}
+
+	if len(errs) > 0 {
+		return
+	}
+
+	// finish
+	m.productsMutex.Lock()
+	defer m.productsMutex.Unlock()
+	// union all maps with our products map
+	for key := range products {
+		m.Products[key] = products[key]
+	}
+
+	return nil
+}
+
+func (m *Market) ImportProductsCSVRecords(
+	ctx context.Context,
+	records [][]string,
+	resChan chan<- map[string]Product,
+	errChan chan<- ImportProductsError) {
+
+	products := make(map[string]Product)
+
+	for _, record := range records { // read each record from csv
+		select {
+		case <-ctx.Done():
+			errChan <- ImportProductsError{Product{}, ErrorCancelled}
+			return
+		default:
 		}
 
+		if len(record) < 3 {
+			errChan <- ImportProductsError{Product{}, errors.New("not enough fields")}
+			return
+		}
 		// first - name
 		name := record[0]
 		// second - price
 		price, err := strconv.ParseFloat(record[1], 32)
-		if err != nil {
-			return errors.Wrap(err, "parse error")
+		if err != nil { // fixme no full information?
+			errChan <- ImportProductsError{Product{name, float32(price), 0}, errors.Wrap(err, "parse error")}
+			return
 		}
 		// third - type
 		typ, err := strconv.Atoi(record[2])
-		if err != nil {
-			return errors.Wrap(err, "parse error")
+		if err != nil { // fixme no full information?
+			errChan <- ImportProductsError{Product{name, float32(price), ProductType(typ)}, errors.Wrap(err, "parse error")}
+			return
 		}
 		// add new product to temporary map
 		product := NewProduct(name, float32(price), ProductType(typ))
 		products[product.Name] = product
 	}
 
-	// lock products to write
-	m.productsMutex.Lock()
-	defer m.productsMutex.Unlock()
-	// union products maps
-	for key := range products {
-		m.Products[key] = products[key]
-	}
-
-	return nil
+	resChan <- products
 }
 
 func (m *Market) ExportProductsCSV() ([]byte, error) {
