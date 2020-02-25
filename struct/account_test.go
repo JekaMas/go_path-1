@@ -9,7 +9,7 @@ import (
 // AddBalanceMantiseError
 func TestAddBalanceMantis(t *testing.T) {
 	testShop := NewMarket()
-	testShop.Accounts["Bred"] = Account{
+	testShop.Accounts.Accounts["Bred"] = Account{
 		Name:    "Bred",
 		Balance: 0,
 		Type:    AccountNormal,
@@ -21,7 +21,7 @@ func TestAddBalanceMantis(t *testing.T) {
 		}
 	}
 
-	if testShop.Accounts["Bred"].Balance != 100 {
+	if testShop.Accounts.Accounts["Bred"].Balance != 100 {
 		t.Errorf("Error, balance not correct: %v != %v", testShop.Accounts["Bred"].Balance, 100)
 	}
 }
@@ -38,7 +38,7 @@ func TestModifyAccountTypeFailed(t *testing.T) {
 		{testName: "Error Type", Account: Account{Name: "Bred", Balance: 100, Type: 100}, err: ErrorAccountInvalidType},
 	}
 	testShop := NewMarket()
-	testShop.Accounts["Bred"] = Account{
+	testShop.Accounts.Accounts["Bred"] = Account{
 		Name:    "Bred",
 		Balance: 0,
 		Type:    AccountNormal,
@@ -47,7 +47,7 @@ func TestModifyAccountTypeFailed(t *testing.T) {
 		t.Run(test.testName, func(t *testing.T) {
 			err := testShop.ModifyAccountType(test.Account.Name, test.Account.Type)
 			if err == nil {
-				t.Errorf("Test it should be failed with error: %v, but get value type = %v", test.err, testShop.Accounts[test.Account.Name].Type)
+				t.Errorf("Test it should be failed with error: %v, but get value type = %v", test.err, testShop.Accounts.Accounts[test.Account.Name].Type)
 			} else if err.Error() != test.err.Error() && !errors.Is(err, test.err) {
 				t.Errorf("Values not equal: %v != %v", err, test.err)
 			}
@@ -62,7 +62,7 @@ func TestShop_Register(t *testing.T) {
 	m := NewMarket()
 
 	err := m.Register("Spike")
-	if _, ok := m.Accounts["Spike"]; !ok {
+	if _, ok := m.Accounts.Accounts["Spike"]; !ok {
 		t.Fatalf("Register() error = %v", err)
 	}
 
@@ -71,7 +71,7 @@ func TestShop_Register(t *testing.T) {
 	}
 
 	_ = m.Register("")
-	if _, ok := m.Accounts[""]; ok {
+	if _, ok := m.Accounts.Accounts[""]; ok {
 		t.Fatal("Register() registered with empty name")
 	}
 }

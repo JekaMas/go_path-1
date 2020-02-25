@@ -26,9 +26,7 @@ func (m *Market) CalculateOrder(userName string, order Order) (float32, error) {
 		return 0, errors.New("products in the order is nil")
 	}
 
-	m.accountsMutex.RLock()
 	account, err := m.GetAccount(userName)
-	m.accountsMutex.RUnlock()
 
 	if err != nil {
 		return 0, errors.Wrap(err, "cannot calculate on a nil account")
@@ -39,6 +37,7 @@ func (m *Market) CalculateOrder(userName string, order Order) (float32, error) {
 	// if exists, get from cache
 	m.orderCacheMutex.RLock()
 	if amount, ok := m.OrdersCache[key]; ok {
+		m.orderCacheMutex.RUnlock()
 		return amount, nil
 	}
 	m.orderCacheMutex.RUnlock()
@@ -93,14 +92,14 @@ func (m *Market) PlaceOrder(userName string, order Order) error {
 		return errors.Wrap(err, "error during order calculation")
 	}
 
-	m.accountsMutex.Lock()
-	defer m.accountsMutex.Unlock()
 
 	acc, err := m.GetAccount(userName)
 	if err != nil {
 		return errors.Wrap(err, "can't place order to the nil account")
 	}
 
+	m.accountsMutex.Lock()
+	defer m.accountsMutex.Unlock()
 	if acc.Balance < amount {
 		return errors.New("insufficient funds")
 	}
