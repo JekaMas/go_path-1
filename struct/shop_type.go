@@ -67,13 +67,12 @@ type Account struct {
 }
 
 type Market struct {
-	Accounts map[string]Account // map[userName]Account
+	Accounts
 	Products map[string]Product // map[productName]Product
 	Bundles  map[string]Bundle  // map[bundleName]Bundle
 
 	OrdersCache map[string]float32 // map[key]sum
 
-	accountsMutex   sync.RWMutex
 	productsMutex   sync.RWMutex
 	bundlesMutex    sync.RWMutex
 	orderCacheMutex sync.RWMutex
