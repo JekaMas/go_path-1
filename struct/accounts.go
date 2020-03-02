@@ -11,26 +11,33 @@ type Accounts struct {
 	mu       sync.RWMutex
 }
 
-func (m *Accounts) Register(userName string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+func NewAccounts() Accounts {
+	return Accounts{
+		Accounts: make(map[string]Account),
+		mu:       sync.RWMutex{},
+	}
+}
 
-	if _, err := m.getAccount(userName); err == nil { // no error with get
+func (a *Accounts) Register(userName string) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	if _, err := a.getAccount(userName); err == nil { // no error with get
 		return ErrorAccountExists
 	}
 
-	return m.setAccount(userName, NewAccount(userName))
+	return a.setAccount(userName, NewAccount(userName))
 }
 
-func (m *Accounts) GetAccount(name string) (Account, error) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+func (a *Accounts) GetAccount(name string) (Account, error) {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
 
-	return m.getAccount(name)
+	return a.getAccount(name)
 }
 
-func (m *Accounts) getAccount(name string) (Account, error) {
-	acc, ok := m.Accounts[name]
+func (a *Accounts) getAccount(name string) (Account, error) {
+	acc, ok := a.Accounts[name]
 	if !ok {
 		return Account{}, ErrorAccountNotRegistered
 	}
@@ -38,14 +45,14 @@ func (m *Accounts) getAccount(name string) (Account, error) {
 	return acc, nil
 }
 
-func (m *Accounts) SetAccount(userName string, account Account) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+func (a *Accounts) SetAccount(userName string, account Account) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
 
-	return m.setAccount(userName, account)
+	return a.setAccount(userName, account)
 }
 
-func (m *Accounts) setAccount(userName string, account Account) error {
+func (a *Accounts) setAccount(userName string, account Account) error {
 	if err := checkName(userName); err != nil {
 		return errors.Wrap(err, "can't set invalid account")
 	}
@@ -53,15 +60,15 @@ func (m *Accounts) setAccount(userName string, account Account) error {
 		return errors.Wrap(err, "can't set invalid account")
 	}
 
-	m.Accounts[userName] = account
+	a.Accounts[userName] = account
 	return nil
 }
 
-func (m *Accounts) changeAccount(userName string, fns ...changeFunc) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+func (a *Accounts) changeAccount(userName string, fns ...changeAccountFunc) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
 
-	acc, err := m.getAccount(userName)
+	acc, err := a.getAccount(userName)
 	if err != nil {
 		return errors.Wrap(err, "can't add balance to the nil account")
 	}
@@ -70,36 +77,36 @@ func (m *Accounts) changeAccount(userName string, fns ...changeFunc) error {
 		fn(&acc)
 	}
 
-	m.Accounts[userName] = acc
+	a.Accounts[userName] = acc
 	return nil
 }
 
-type changeFunc func(account *Account)
+type changeAccountFunc func(account *Account)
 
-func changeType(t AccountType) changeFunc {
+func changeType(t AccountType) changeAccountFunc {
 	return func(account *Account) {
 		account.Type = t
 	}
 }
 
-func addBalance(b float32) changeFunc {
+func addBalance(b float32) changeAccountFunc {
 	return func(account *Account) {
 		account.Balance += b
 	}
 }
 
-func (m *Accounts) clone() []Account {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+func (a *Accounts) clone() []Account {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
 
-	n := len(m.Accounts)
+	n := len(a.Accounts)
 	if n == 0 {
 		return nil
 	}
 
 	accs := make([]Account, n)
 	i := 0
-	for _, acc := range m.Accounts {
+	for _, acc := range a.Accounts {
 		accs[i] = acc
 		i++
 	}

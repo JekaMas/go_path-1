@@ -19,8 +19,8 @@ func TestAddProductFailed(t *testing.T) {
 	}
 
 	testShop := NewMarket()
+	_ = testShop.AddProduct(Product{Name: "Pineapple", Price: 100, Type: ProductNormal})
 
-	testShop.Products["Pineapple"] = Product{Name: "Pineapple", Price: 100, Type: ProductNormal}
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
 			err := testShop.AddProduct(test.Product)
@@ -46,8 +46,8 @@ func TestModifyProductFailed(t *testing.T) {
 	}
 
 	testShop := NewMarket()
+	_ = testShop.AddProduct(Product{Name: "Pineapple", Price: 100, Type: ProductNormal})
 
-	testShop.Products["Pineapple"] = Product{Name: "Pineapple", Price: 100, Type: ProductNormal}
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
 			err := testShop.ModifyProduct(test.Product)
@@ -89,7 +89,7 @@ func TestShop_AddProduct(t *testing.T) {
 			}
 
 			if !tt.wantErr {
-				p := m.Products[tt.productName]
+				p, _ := m.GetProduct(tt.productName)
 				if tt.price != p.Price || tt.ProductType != p.Type {
 					t.Errorf("AddProduct() wrong product values want = %v get = %v",
 						Product{tt.productName, tt.price, tt.ProductType}, p)
@@ -130,7 +130,7 @@ func TestShop_ModifyProduct(t *testing.T) {
 				t.Errorf("ModifyProduct() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if product := m.Products[productName]; !tt.wantErr && !reflect.DeepEqual(product, tt.product) {
+			if product, _ := m.GetProduct(productName); !tt.wantErr && !reflect.DeepEqual(product, tt.product) {
 				t.Errorf("ModifyProduct() product = %v, want %v",
 					product, tt.product)
 			}
@@ -161,7 +161,7 @@ func TestShop_RemoveProduct(t *testing.T) {
 				t.Errorf("RemoveProduct() error = %v, wantErr %v, product %v", err, tt.wantErr, tt.name)
 			}
 
-			if product, ok := m.Products[tt.productName]; !tt.wantErr && ok {
+			if product, err := m.GetProduct(tt.productName); !tt.wantErr && err == nil {
 				t.Errorf("RemoveProduct() product %v has not been removed", product)
 			}
 		})

@@ -22,86 +22,12 @@ func NewBundle(main Product, discount float32, bundleType BundleType, additional
 	}
 }
 
-func (m *Market) AddBundle(name string, main Product, discount float32, additional ...Product) error {
-
-	if main.Type == ProductSampled {
-		return ErrorBundleMainSample
-	}
-
-	sampled := getProductsWithType(additional, ProductSampled)
-
-	bundleType := BundleNormal
-	if len(sampled) == 1 {
-		bundleType = BundleSample
-	}
-
-	b := NewBundle(main, discount, bundleType, additional...)
-
-	m.bundlesMutex.Lock()
-	defer m.bundlesMutex.Unlock()
-
-	if _, err := m.GetBundle(name); err == nil {
-		return ErrorBundleExists
-	}
-	return m.SetBundle(name, b)
-}
-
 func (m *Market) ChangeDiscount(name string, discount float32) error {
-
 	if discount < 1 || discount > 99 {
 		return ErrorInvalidDiscount
 	}
 
-	m.bundlesMutex.Lock()
-	defer m.bundlesMutex.Unlock()
-
-	bundle, err := m.GetBundle(name)
-	if err != nil {
-		return errors.Wrap(err, "can't change discount of the nil bundle")
-	}
-
-	bundle.Discount = discount
-	return m.SetBundle(name, bundle)
-}
-
-func (m *Market) RemoveBundle(name string) error {
-
-	m.bundlesMutex.Lock()
-	defer m.bundlesMutex.Unlock()
-
-	_, err := m.GetBundle(name)
-
-	if err != nil {
-		return errors.Wrap(err, "can't delete nil bundle")
-	}
-
-	delete(m.Bundles, name)
-	return nil
-}
-
-/* --- Interface ---------------------------------------------------------------------------------------------------- */
-
-func (m *Market) GetBundle(name string) (Bundle, error) {
-	bundle, ok := m.Bundles[name]
-
-	if !ok {
-		return Bundle{}, ErrorBundleNotExists
-	}
-
-	return bundle, nil
-}
-
-func (m *Market) SetBundle(name string, bundle Bundle) error {
-
-	if err := checkName(name); err != nil {
-		return errors.Wrap(err, "can't set invalid bundle")
-	}
-	if err := checkBundle(bundle); err != nil {
-		return errors.Wrap(err, "can't set invalid bundle")
-	}
-
-	m.Bundles[name] = bundle
-	return nil
+	return m.changeBundle(name, changeDiscountFunc(discount))
 }
 
 /* --- Check -------------------------------------------------------------------------------------------------------- */

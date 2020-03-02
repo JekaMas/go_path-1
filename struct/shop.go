@@ -31,10 +31,10 @@ type ImportAccountsError struct {
 
 func NewMarket() Market {
 	return Market{
-		Accounts:    make(map[string]Account),
-		Products:    make(map[string]Product),
-		Bundles:     make(map[string]Bundle),
-		OrdersCache: make(map[string]float32),
+		Accounts:    NewAccounts(),
+		Products:    NewProducts(),
+		Bundles:     NewBundles(),
+		OrdersCache: NewOrdersCache(),
 	}
 }
 
@@ -49,7 +49,7 @@ func (m *Market) Export() ([]byte, error) {
 }
 
 // Products
-func (m *Market) ImportProductsCSV(data []byte) (errs []ImportProductsError) {
+func (p *Products) ImportProductsCSV(data []byte) (errs []ImportProductsError) {
 	// create new reader
 	reader := csv.NewReader(bytes.NewReader(data))
 
@@ -102,7 +102,7 @@ func (m *Market) ImportProductsCSV(data []byte) (errs []ImportProductsError) {
 			end += batchSize
 		}
 
-		go m.ImportProductsCSVRecords(ctx, records[start:end], resChan, errChan)
+		go ImportProductsCSVRecords(ctx, records[start:end], resChan, errChan)
 	}
 
 	// gather data
@@ -126,17 +126,20 @@ func (m *Market) ImportProductsCSV(data []byte) (errs []ImportProductsError) {
 	}
 
 	// finish
-	m.productsMutex.Lock()
-	defer m.productsMutex.Unlock()
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	// union all maps with our products map
 	for key := range products {
-		m.Products[key] = products[key]
+		err := p.setProduct(key, products[key])
+		if err != nil {
+			return append(errs, ImportProductsError{products[key], fmt.Errorf("can't set product: %v", err)})
+		}
 	}
 
 	return nil
 }
 
-func (m *Market) ImportProductsCSVRecords(
+func ImportProductsCSVRecords(
 	ctx context.Context,
 	records [][]string,
 	resChan chan<- map[string]Product,
@@ -178,10 +181,10 @@ func (m *Market) ImportProductsCSVRecords(
 	resChan <- products
 }
 
-func (m *Market) ExportProductsCSV() ([]byte, error) {
+func (p *Products) ExportProductsCSV() ([]byte, error) {
 	export := make(map[interface{}]interface{}) // fixme no generics, nice
-	for key := range m.Products {
-		export[key] = m.Products[key]
+	for key := range p.Products {
+		export[key] = p.Products[key]
 	}
 
 	return exportMapToCsv(export, reflect.ValueOf(Product{}))
@@ -256,11 +259,14 @@ func (m *Market) ImportAccountsCSV(data []byte) (errs []ImportAccountsError) { /
 	}
 
 	// lock accounts to write
-	m.accountsMutex.Lock()
-	defer m.accountsMutex.Unlock()
+	m.Accounts.mu.Lock()
+	defer m.Accounts.mu.Unlock()
 	// union accounts maps
 	for key := range accounts {
-		m.Accounts[key] = accounts[key]
+		err := m.setAccount(key, accounts[key])
+		if err != nil {
+			return append(errs, ImportAccountsError{Account{}, errors.Wrap(err, "accounts import error")})
+		}
 	}
 
 	return nil
@@ -309,10 +315,10 @@ func (m *Market) ImportAccountsCSVRecords(
 	resChan <- accounts
 }
 
-func (m *Market) ExportAccountsCSV() ([]byte, error) {
+func (a *Accounts) ExportAccountsCSV() ([]byte, error) {
 	export := make(map[interface{}]interface{})
-	for key := range m.Accounts {
-		export[key] = m.Accounts[key]
+	for key := range a.Accounts {
+		export[key] = a.Accounts[key]
 	}
 
 	return exportMapToCsv(export, reflect.ValueOf(Product{}))

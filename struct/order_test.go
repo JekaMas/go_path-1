@@ -66,12 +66,11 @@ func TestCalculateOrderSuccess(t *testing.T) {
 		},
 	}
 	testShop := NewMarket()
-
-	testShop.Accounts["Bred"] = Account{
+	_ = testShop.SetAccount("Bred", Account{
 		Name:    "Bred",
 		Balance: 100_000,
 		Type:    AccountNormal,
-	}
+	})
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
@@ -132,23 +131,23 @@ func TestPlaceOrderFailed(t *testing.T) {
 	}
 
 	testShop := NewMarket()
-
-	testShop.Accounts["Bred"] = Account{
+	_ = testShop.SetAccount("Bred", Account{
 		Name:    "Bred",
 		Balance: 100_000,
 		Type:    AccountNormal,
-	}
-	testShop.Accounts["Alfred"] = Account{
+	})
+	_ = testShop.SetAccount("Alfred", Account{
 		Name:    "Alfred",
 		Balance: 1000,
 		Type:    100,
-	}
+	})
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
 			err := testShop.PlaceOrder(test.username, test.order)
 			if err == nil {
-				t.Errorf("Test it should be failed, error: %v, balance = %v", test.err, testShop.Accounts[test.username].Balance)
+				acc, _ := testShop.GetAccount(test.username)
+				t.Errorf("Test it should be failed, error: %v, balance = %v", test.err, acc.Balance)
 			} else if err.Error() != test.err.Error() && !errors.Is(err, test.err) {
 				t.Errorf("Values not equal: %v != %v", err, test.err)
 			}
@@ -186,12 +185,11 @@ func TestCalculateOrderMantis(t *testing.T) {
 		total: 1,
 	}
 	testShop := NewMarket()
-
-	testShop.Accounts["Bred"] = Account{
+	_ = testShop.SetAccount("Bred", Account{
 		Name:    "Bred",
 		Balance: 100_000,
 		Type:    AccountNormal,
-	}
+	})
 
 	total, err := testShop.CalculateOrder("Bred", test.order)
 	if err != nil {

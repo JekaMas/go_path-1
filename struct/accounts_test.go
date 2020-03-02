@@ -22,7 +22,8 @@ func TestAddBalanceMantis(t *testing.T) {
 	}
 
 	if testShop.Accounts.Accounts["Bred"].Balance != 100 {
-		t.Errorf("Error, balance not correct: %v != %v", testShop.Accounts["Bred"].Balance, 100)
+		acc, _ := testShop.GetAccount("Bred")
+		t.Errorf("Error, balance not correct: %v != %v", acc.Balance, 100)
 	}
 }
 

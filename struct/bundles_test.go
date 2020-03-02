@@ -34,8 +34,9 @@ func TestAddBundleSuccess(t *testing.T) {
 			if err != nil {
 				t.Errorf("Test it should be success, error: %v", err)
 			}
-			if testShop.Bundles[test.testName].Type != test.bundleType {
-				t.Errorf("Error, type not correct: %v != %v", testShop.Bundles[test.testName].Type, test.bundleType)
+			bun, _ := testShop.GetBundle(test.testName)
+			if bun.Type != test.bundleType {
+				t.Errorf("Error, type not correct: %v != %v", bun.Type, test.bundleType)
 			}
 		})
 	}
@@ -147,9 +148,10 @@ func TestShop_AddBundle(t *testing.T) {
 				t.Errorf("AddBundle() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if !tt.wantErr && !reflect.DeepEqual(NewBundle(tt.main, tt.discount, tt.bundleType, tt.additional...), m.Bundles[tt.name]) {
+			bun, _ := m.GetBundle(tt.name)
+			if !tt.wantErr && !reflect.DeepEqual(NewBundle(tt.main, tt.discount, tt.bundleType, tt.additional...), bun) {
 				t.Errorf("AddBundle() wrong bundle added = %v get = %v",
-					NewBundle(tt.main, tt.discount, tt.bundleType, tt.additional...), m.Bundles[tt.name])
+					NewBundle(tt.main, tt.discount, tt.bundleType, tt.additional...), bun)
 			}
 		})
 	}
@@ -183,7 +185,8 @@ func TestShop_ChangeDiscount(t *testing.T) {
 				t.Errorf("ChangeDiscount() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if discount := m.Bundles["default"].Discount; !tt.wantErr && discount != tt.discount {
+			bun, _ := m.GetBundle("default")
+			if discount := bun.Discount; !tt.wantErr && discount != tt.discount {
 				t.Errorf("ChangeDiscount() discount = %v, want %v",
 					discount, tt.discount)
 			}
@@ -219,8 +222,9 @@ func TestShop_RemoveBundle(t *testing.T) {
 				t.Errorf("RemoveBundle() error = %v, wantErr %v, product %v", err, tt.wantErr, tt.name)
 			}
 
-			if product, ok := m.Bundles[tt.bundleName]; !tt.wantErr && ok {
-				t.Errorf("RemoveBundle() product %v has not been removed", product)
+			bun, err := m.GetBundle(tt.bundleName)
+			if !tt.wantErr && err == nil {
+				t.Errorf("RemoveBundle() bundle` %v has not been removed", bun)
 			}
 		})
 	}

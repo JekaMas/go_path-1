@@ -1,8 +1,6 @@
 package shop
 
 import (
-	"bytes"
-	"fmt"
 	"github.com/pkg/errors"
 )
 
@@ -32,15 +30,10 @@ func (m *Market) CalculateOrder(userName string, order Order) (float32, error) {
 		return 0, errors.Wrap(err, "cannot calculate on a nil account")
 	}
 
-	// cache key
-	key := orderKey(account, order)
-	// if exists, get from cache
-	m.orderCacheMutex.RLock()
-	if amount, ok := m.OrdersCache[key]; ok {
-		m.orderCacheMutex.RUnlock()
+	amount, ok := m.GetCached(account, order)
+	if ok {
 		return amount, nil
 	}
-	m.orderCacheMutex.RUnlock()
 
 	// products
 	productsPrice := float32(0)
@@ -76,11 +69,8 @@ func (m *Market) CalculateOrder(userName string, order Order) (float32, error) {
 		bundlesPrice += price * (1 - bundle.Discount*0.01)
 	}
 
-	amount := productsPrice + bundlesPrice
-
-	m.orderCacheMutex.Lock()
-	m.OrdersCache[key] = amount
-	m.orderCacheMutex.Unlock()
+	amount = productsPrice + bundlesPrice
+	m.PutCached(account, order, amount)
 
 	return amount, nil
 }
@@ -92,33 +82,15 @@ func (m *Market) PlaceOrder(userName string, order Order) error {
 		return errors.Wrap(err, "error during order calculation")
 	}
 
-
 	acc, err := m.GetAccount(userName)
 	if err != nil {
 		return errors.Wrap(err, "can't place order to the nil account")
 	}
 
-	m.accountsMutex.Lock()
-	defer m.accountsMutex.Unlock()
 	if acc.Balance < amount {
 		return errors.New("insufficient funds")
 	}
 
 	acc.Balance -= amount
 	return m.SetAccount(userName, acc)
-}
-
-/* -- Util ---------------------------------------------------------------------------------------------------------- */
-
-func orderKey(account Account, order Order) string {
-	b := new(bytes.Buffer)
-	for _, value := range order.Products { // FIXME handle errors
-		_, _ = fmt.Fprintf(b, "%v", value)
-	}
-	for _, value := range order.Bundles {
-		_, _ = fmt.Fprintf(b, "%v", value)
-	}
-
-	_, _ = fmt.Fprintf(b, "%v", account.Type)
-	return b.String()
 }
