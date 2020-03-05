@@ -27,7 +27,7 @@ func TestShop_RegisterRace(t *testing.T) {
 		"Ann",
 	}
 
-	m := NewMarket()
+	m := NewTimeoutDecorator()
 	wg := sync.WaitGroup{}
 
 	wg.Add(len(names))
@@ -48,7 +48,7 @@ func TestShop_RegisterRace(t *testing.T) {
 
 func TestShop_BalanceRace(t *testing.T) {
 
-	m := NewMarket()
+	m := NewTimeoutDecorator()
 	_ = m.Register("John")
 	_ = m.Register("Stan")
 	_ = m.AddBalance("Stan", 100)
@@ -84,7 +84,7 @@ func TestShop_AddBalanceRace(t *testing.T) {
 		sum  float32
 	}
 
-	m := NewMarket()
+	m := NewTimeoutDecorator()
 	_ = m.Register("John")
 	_ = m.Register("Stan")
 	_ = m.AddBalance("Stan", 100)
@@ -132,7 +132,7 @@ func TestShop_GetAccountsRace(t *testing.T) {
 		shop.SortByName,
 	}
 
-	m := NewMarket()
+	m := NewTimeoutDecorator()
 
 	// init
 	_ = m.Register("John")

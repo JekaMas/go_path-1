@@ -5,90 +5,35 @@ import (
 	"time"
 )
 
-func (m *Market) AddBundle(name string, main shop.Product, discount float32, additional ...shop.Product) error {
-
-	resChan := make(chan error, 1)
-
-	go func() {
-		resChan <- m.shop.AddBundle(name, main, discount, additional...)
-	}()
-
-	select {
-	case res := <-resChan:
-		return res
-	case <-time.After(time.Second):
-		return ErrorTimeout
-	}
+func (td *TimeoutDecorator) AddBundle(name string, main shop.Product, discount float32, additional ...shop.Product) error {
+	return td.timeoutFunc(func(ch chan error) {
+		ch <- td.shop.AddBundle(name, main, discount, additional...)
+	}, time.Second)
 }
 
-func (m *Market) ChangeDiscount(name string, discount float32) error {
-
-	resChan := make(chan error, 1)
-
-	go func() {
-		resChan <- m.shop.ChangeDiscount(name, discount)
-	}()
-
-	select {
-	case res := <-resChan:
-		return res
-	case <-time.After(time.Second):
-		return ErrorTimeout
-	}
+func (td *TimeoutDecorator) ChangeDiscount(name string, discount float32) error {
+	return td.timeoutFunc(func(ch chan error) {
+		ch <- td.shop.ChangeDiscount(name, discount)
+	}, time.Second)
 }
 
-func (m *Market) RemoveBundle(name string) error {
-
-	resChan := make(chan error, 1)
-
-	go func() {
-		resChan <- m.shop.RemoveBundle(name)
-	}()
-
-	select {
-	case res := <-resChan:
-		return res
-	case <-time.After(time.Second):
-		return ErrorTimeout
-	}
+func (td *TimeoutDecorator) RemoveBundle(name string) error {
+	return td.timeoutFunc(func(ch chan error) {
+		ch <- td.shop.RemoveBundle(name)
+	}, time.Second)
 }
 
 /* --- Interface ---------------------------------------------------------------------------------------------------- */
 
-func (m *Market) GetBundle(name string) (shop.Bundle, error) {
-
-	type result struct {
-		bundle shop.Bundle
-		err    error
-	}
-
-	resChan := make(chan result, 1)
-
-	go func() {
-		bundle, err := m.shop.GetBundle(name)
-		resChan <- result{bundle, err}
-	}()
-
-	select {
-	case res := <-resChan:
-		return res.bundle, res.err
-	case <-time.After(time.Second):
-		return shop.Bundle{}, ErrorTimeout
-	}
+func (td *TimeoutDecorator) GetBundle(name string) (shop.Bundle, error) {
+	return td.timeoutFuncBundle(func(ch chan bundleResult) {
+		bun, err := td.shop.GetBundle(name)
+		ch <- bundleResult{bun, err}
+	}, time.Second)
 }
 
-func (m *Market) SetBundle(name string, bundle shop.Bundle) error {
-
-	resChan := make(chan error, 1)
-
-	go func() {
-		resChan <- m.shop.SetBundle(name, bundle)
-	}()
-
-	select {
-	case res := <-resChan:
-		return res
-	case <-time.After(time.Second):
-		return ErrorTimeout
-	}
+func (td *TimeoutDecorator) SetBundle(name string, bundle shop.Bundle) error {
+	return td.timeoutFunc(func(ch chan error) {
+		ch <- td.shop.SetBundle(name, bundle)
+	}, time.Second)
 }

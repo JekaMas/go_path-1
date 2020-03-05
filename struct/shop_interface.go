@@ -15,6 +15,8 @@ type ProductModifier interface {
 	AddProduct(Product) error
 	ModifyProduct(Product) error
 	RemoveProduct(name string) error
+	GetProduct(name string) (Product, error)
+	SetProduct(name string, product Product) error
 }
 
 // AccountManager - интерфейс для работы с пользователями.
@@ -22,7 +24,10 @@ type AccountManager interface {
 	Register(userName string) error
 	AddBalance(userName string, sum float32) error
 	Balance(userName string) (float32, error)
+	SetAccount(userName string, account Account) error
+	GetAccount(userName string) (Account, error)
 	GetAccounts(sortType AccountSortType) []Account
+	ModifyAccountType(userName string, accountType AccountType) error
 }
 
 // OrderManager - интерфейс для работы с заказами.
@@ -36,6 +41,8 @@ type BundleManager interface {
 	AddBundle(name string, main Product, discount float32, additional ...Product) error
 	ChangeDiscount(name string, discount float32) error
 	RemoveBundle(name string) error
+	SetBundle(name string, bundle Bundle) error
+	GetBundle(name string) (Bundle, error)
 }
 
 // Exporter - интерфейс для получения полного состояния магазина.

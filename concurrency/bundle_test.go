@@ -30,7 +30,7 @@ func TestShop_AddBundleRace(t *testing.T) {
 		{NewProduct("P6", 10, pn), 1, []shop.Product{NewProduct("P2", 90, ps)}},
 	}
 
-	m := NewMarket()
+	m := NewTimeoutDecorator()
 
 	wg := sync.WaitGroup{}
 	wg.Add(len(bundles))
@@ -55,7 +55,7 @@ func TestShop_ChangeDiscountRace(t *testing.T) {
 		discount   float32
 	}
 
-	m := NewMarket()
+	m := NewTimeoutDecorator()
 	_ = m.AddBundle("B1", NewProduct("P1", 10, shop.ProductNormal), 1, NewProduct("P2", 90, shop.ProductPremium))
 	_ = m.AddBundle("B2", NewProduct("P1", 10, shop.ProductNormal), 1, NewProduct("P2", 90, shop.ProductSampled))
 
@@ -89,7 +89,7 @@ func TestShop_ChangeDiscountRace(t *testing.T) {
 
 func TestShop_RemoveBundleRace(t *testing.T) {
 
-	m := NewMarket()
+	m := NewTimeoutDecorator()
 	_ = m.AddBundle("B1", NewProduct("P1", 10, shop.ProductNormal), 1, NewProduct("P2", 90, shop.ProductPremium))
 	_ = m.AddBundle("B2", NewProduct("P1", 10, shop.ProductNormal), 1, NewProduct("P2", 90, shop.ProductSampled))
 	_ = m.AddBundle("B3", NewProduct("P1", 10, shop.ProductNormal), 1, NewProduct("P2", 90, shop.ProductPremium))

@@ -23,7 +23,7 @@ func TestShop_AddProductRace(t *testing.T) {
 		NewProduct("P6", 10, ps),
 	}
 
-	m := NewMarket()
+	m := NewTimeoutDecorator()
 
 	wg := sync.WaitGroup{}
 	wg.Add(len(products))
@@ -44,7 +44,7 @@ func TestShop_AddProductRace(t *testing.T) {
 
 func TestShop_ModifyProductRace(t *testing.T) {
 
-	m := NewMarket()
+	m := NewTimeoutDecorator()
 	_ = m.AddProduct(shop.Product{Name: "P1", Price: 100, Type: shop.ProductNormal})
 	_ = m.AddProduct(shop.Product{Name: "P2", Price: 100, Type: shop.ProductPremium})
 
@@ -78,7 +78,7 @@ func TestShop_ModifyProductRace(t *testing.T) {
 
 func TestShop_RemoveProductRace(t *testing.T) {
 
-	m := NewMarket()
+	m := NewTimeoutDecorator()
 	_ = m.AddProduct(shop.Product{Name: "P1", Price: 100, Type: shop.ProductNormal})
 	_ = m.AddProduct(shop.Product{Name: "P2", Price: 100, Type: shop.ProductPremium})
 	_ = m.AddProduct(shop.Product{Name: "P3", Price: 100, Type: shop.ProductNormal})

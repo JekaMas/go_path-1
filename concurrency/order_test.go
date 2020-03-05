@@ -13,7 +13,7 @@ func TestShop_CalculateOrderRace(t *testing.T) {
 		order       shop.Order
 	}
 
-	m := NewMarket()
+	m := NewTimeoutDecorator()
 
 	accounts := []shop.Account{
 		{"A", 0, shop.AccountNormal},
@@ -87,7 +87,7 @@ func TestShop_PlaceOrder(t *testing.T) {
 		order       shop.Order
 	}
 
-	m := NewMarket()
+	m := NewTimeoutDecorator()
 
 	accounts := []shop.Account{
 		{"A", 100_000_000, shop.AccountNormal},
