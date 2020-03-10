@@ -1,4 +1,4 @@
-package concurrency
+package time
 
 import (
 	shop "go_path/struct"
@@ -39,5 +39,5 @@ func (td *TimeoutDecorator) GetProduct(name string) (shop.Product, error) {
 func (td *TimeoutDecorator) SetProduct(name string, product shop.Product) error {
 	return td.timeoutFunc(func(ch chan error) {
 		ch <- td.shop.SetProduct(name, product)
-	}, time.Second)
+	}, time.Millisecond)
 }

@@ -48,10 +48,14 @@ type BundleManager interface {
 // Exporter - интерфейс для получения полного состояния магазина.
 type Exporter interface {
 	Export() ([]byte, error)
+	ExportProductsCSV() ([]byte, error)
+	ExportAccountsCSV() ([]byte, error)
 }
 
 // Importer - интерфейс для загрузки состояния магазина
 // принимает формат, который возвращает Exporter.
 type Importer interface {
 	Import(data []byte) error
+	ImportProductsCSV(data []byte) (errs []ImportProductsError)
+	ImportAccountsCSV(data []byte) (errs []ImportAccountsError)
 }

@@ -1,4 +1,4 @@
-package concurrency
+package time
 
 import (
 	shop "go_path/struct"

@@ -20,13 +20,13 @@ var (
 )
 
 type ImportProductsError struct {
-	product Product
-	err     error
+	Product Product
+	Err     error
 }
 
 type ImportAccountsError struct {
-	account Account
-	err     error
+	Account Account
+	Err     error
 }
 
 func NewMarket() Market {
@@ -49,7 +49,7 @@ func (m *Market) Export() ([]byte, error) {
 }
 
 // Products
-func (p *Products) ImportProductsCSV(data []byte) (errs []ImportProductsError) {
+func (m *Market) ImportProductsCSV(data []byte) (errs []ImportProductsError) {
 	// create new reader
 	reader := csv.NewReader(bytes.NewReader(data))
 
@@ -126,11 +126,11 @@ func (p *Products) ImportProductsCSV(data []byte) (errs []ImportProductsError) {
 	}
 
 	// finish
-	p.mu.Lock()
-	defer p.mu.Unlock()
+	m.Products.mu.Lock()
+	defer m.Products.mu.Unlock()
 	// union all maps with our products map
 	for key := range products {
-		err := p.setProduct(key, products[key])
+		err := m.setProduct(key, products[key])
 		if err != nil {
 			return append(errs, ImportProductsError{products[key], fmt.Errorf("can't set product: %v", err)})
 		}
@@ -181,10 +181,10 @@ func ImportProductsCSVRecords(
 	resChan <- products
 }
 
-func (p *Products) ExportProductsCSV() ([]byte, error) {
+func (m *Market) ExportProductsCSV() ([]byte, error) {
 	export := make(map[interface{}]interface{}) // fixme no generics, nice
-	for key := range p.Products {
-		export[key] = p.Products[key]
+	for key := range m.Products.Products {
+		export[key] = m.Products.Products[key]
 	}
 
 	return exportMapToCsv(export, reflect.ValueOf(Product{}))
@@ -315,10 +315,10 @@ func (m *Market) ImportAccountsCSVRecords(
 	resChan <- accounts
 }
 
-func (a *Accounts) ExportAccountsCSV() ([]byte, error) {
+func (m *Market) ExportAccountsCSV() ([]byte, error) {
 	export := make(map[interface{}]interface{})
-	for key := range a.Accounts {
-		export[key] = a.Accounts[key]
+	for key := range m.Accounts.Accounts {
+		export[key] = m.Accounts.Accounts[key]
 	}
 
 	return exportMapToCsv(export, reflect.ValueOf(Product{}))

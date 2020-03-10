@@ -29,7 +29,7 @@ func TestMarket_ImportProductsCSV(t *testing.T) {
 	errs := m2.ImportProductsCSV(data)
 
 	for _, err := range errs {
-		t.Errorf("Error: '%v' Product: %v", err.err, err.product)
+		t.Errorf("Error: '%v' Product: %v", err.Err, err.Product)
 	}
 
 	if !reflect.DeepEqual(m, m2) {
@@ -77,7 +77,7 @@ func TestMarket_ImportAccountsCSV(t *testing.T) {
 	errs := m2.ImportAccountsCSV(data)
 
 	for _, err := range errs {
-		t.Errorf("Error: '%v' Account: %v", err.err, err.account)
+		t.Errorf("Error: '%v' Account: %v", err.Err, err.Account)
 	}
 
 	if !reflect.DeepEqual(m, m2) {
