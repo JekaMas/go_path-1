@@ -11,7 +11,7 @@ func TestShop_Export(t *testing.T) {
 
 	type test struct {
 		name    string
-		m       Market
+		m       *Market
 		wantErr bool
 	}
 
@@ -83,7 +83,7 @@ func TestMarketImplementsShop(t *testing.T) {
 
 /* --- new ---------------------------------------------------------------------------------------------------------- */
 
-func testMarket() Market {
+func testMarket() *Market {
 
 	m := NewMarket()
 

@@ -113,7 +113,7 @@ func TestMarket_ImportAccountsCSV(t *testing.T) {
 	}
 }
 
-func testExportMarket(productsN int, accountsN int) Market {
+func testExportMarket(productsN int, accountsN int) *Market {
 
 	m := NewMarket()
 	baseName := "Bimbo"
