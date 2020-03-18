@@ -20,7 +20,6 @@ func NewProducts() Products {
 }
 
 func (p *Products) AddProduct(product Product) error {
-
 	if err := checkProduct(product); err != nil {
 		return errors.Wrap(err, "invalid check product")
 	}
@@ -91,7 +90,6 @@ func (p *Products) SetProduct(name string, product Product) error {
 }
 
 func (p *Products) setProduct(name string, product Product) error {
-
 	if err := checkName(name); err != nil {
 		return errors.Wrap(err, "can't set invalid product")
 	}

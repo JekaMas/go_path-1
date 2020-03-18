@@ -1,25 +1,25 @@
 package time
 
 import (
-	shop "go_path/struct"
+	"github.com/Kmortyk/go_path/shop"
 	"time"
 )
 
 func (td *TimeoutDecorator) AddBundle(name string, main shop.Product, discount float32, additional ...shop.Product) error {
 	return td.timeoutFunc(func(ch chan error) {
-		ch <- td.shop.AddBundle(name, main, discount, additional...)
+		ch <- td.Shop.AddBundle(name, main, discount, additional...)
 	}, time.Second)
 }
 
 func (td *TimeoutDecorator) ChangeDiscount(name string, discount float32) error {
 	return td.timeoutFunc(func(ch chan error) {
-		ch <- td.shop.ChangeDiscount(name, discount)
+		ch <- td.Shop.ChangeDiscount(name, discount)
 	}, time.Second)
 }
 
 func (td *TimeoutDecorator) RemoveBundle(name string) error {
 	return td.timeoutFunc(func(ch chan error) {
-		ch <- td.shop.RemoveBundle(name)
+		ch <- td.Shop.RemoveBundle(name)
 	}, time.Second)
 }
 
@@ -27,13 +27,13 @@ func (td *TimeoutDecorator) RemoveBundle(name string) error {
 
 func (td *TimeoutDecorator) GetBundle(name string) (shop.Bundle, error) {
 	return td.timeoutFuncBundle(func(ch chan bundleResult) {
-		bun, err := td.shop.GetBundle(name)
+		bun, err := td.Shop.GetBundle(name)
 		ch <- bundleResult{bun, err}
 	}, time.Second)
 }
 
 func (td *TimeoutDecorator) SetBundle(name string, bundle shop.Bundle) error {
 	return td.timeoutFunc(func(ch chan error) {
-		ch <- td.shop.SetBundle(name, bundle)
+		ch <- td.Shop.SetBundle(name, bundle)
 	}, time.Second)
 }

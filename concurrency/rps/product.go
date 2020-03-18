@@ -1,7 +1,7 @@
 package rps
 
 import (
-	shop "go_path/struct"
+	"github.com/Kmortyk/go_path/shop"
 )
 
 func (d *SoftLimitDecorator) GetProduct(name string) (shop.Product, error) {

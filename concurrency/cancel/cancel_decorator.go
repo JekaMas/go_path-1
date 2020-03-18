@@ -3,7 +3,7 @@ package cancel
 import (
 	"context"
 	"errors"
-	shop "go_path/struct"
+	"github.com/Kmortyk/go_path/shop"
 )
 
 var (

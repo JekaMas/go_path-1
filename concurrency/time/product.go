@@ -1,7 +1,7 @@
 package time
 
 import (
-	shop "go_path/struct"
+	"github.com/Kmortyk/go_path/shop"
 	"time"
 )
 
@@ -11,19 +11,19 @@ func NewProduct(productName string, price float32, productType shop.ProductType)
 
 func (td *TimeoutDecorator) AddProduct(p shop.Product) error {
 	return td.timeoutFunc(func(ch chan error) {
-		ch <- td.shop.AddProduct(p)
+		ch <- td.Shop.AddProduct(p)
 	}, time.Second)
 }
 
 func (td *TimeoutDecorator) ModifyProduct(p shop.Product) error {
 	return td.timeoutFunc(func(ch chan error) {
-		ch <- td.shop.ModifyProduct(p)
+		ch <- td.Shop.ModifyProduct(p)
 	}, time.Second)
 }
 
 func (td *TimeoutDecorator) RemoveProduct(name string) error {
 	return td.timeoutFunc(func(ch chan error) {
-		ch <- td.shop.RemoveProduct(name)
+		ch <- td.Shop.RemoveProduct(name)
 	}, time.Second)
 }
 
@@ -31,13 +31,13 @@ func (td *TimeoutDecorator) RemoveProduct(name string) error {
 
 func (td *TimeoutDecorator) GetProduct(name string) (shop.Product, error) {
 	return td.timeoutFuncProduct(func(ch chan productResult) {
-		prod, err := td.shop.GetProduct(name)
+		prod, err := td.Shop.GetProduct(name)
 		ch <- productResult{prod, err}
 	}, time.Second)
 }
 
 func (td *TimeoutDecorator) SetProduct(name string, product shop.Product) error {
 	return td.timeoutFunc(func(ch chan error) {
-		ch <- td.shop.SetProduct(name, product)
+		ch <- td.Shop.SetProduct(name, product)
 	}, time.Millisecond)
 }

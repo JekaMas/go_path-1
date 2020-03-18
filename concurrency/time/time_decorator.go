@@ -2,8 +2,9 @@ package time
 
 import (
 	"errors"
-	shop "go_path/struct"
 	"time"
+
+	"github.com/Kmortyk/go_path/shop"
 )
 
 var (
@@ -31,12 +32,12 @@ type bundleResult struct {
 }
 
 type TimeoutDecorator struct {
-	shop shop.Shop
+	shop.Shop
 }
 
-func NewTimeoutDecorator() TimeoutDecorator {
+func NewTimeoutDecorator() *TimeoutDecorator {
 	m := shop.NewMarket()
-	return TimeoutDecorator{&m}
+	return &TimeoutDecorator{m}
 }
 
 func (td *TimeoutDecorator) timeoutFunc(f func(ch chan error), timeout time.Duration) error {

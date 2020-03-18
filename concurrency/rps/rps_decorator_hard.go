@@ -2,8 +2,9 @@ package rps
 
 import (
 	"errors"
-	shop "go_path/struct"
 	"sync"
+
+	"github.com/Kmortyk/go_path/shop"
 )
 
 type HardLimitDecorator struct {
@@ -15,63 +16,54 @@ var (
 	ErrorHardLimit = errors.New("hard limit error")
 )
 
-func NewHardLimitDecorator(s shop.Shop) HardLimitDecorator {
-	return HardLimitDecorator{
-		Shop:     s,
-		hardLock: sync.Map{},
+func NewHardLimitDecorator(s shop.Shop) *HardLimitDecorator {
+	return &HardLimitDecorator{
+		Shop: s,
 	}
 }
 
-func (d *HardLimitDecorator) hardLimitFunc(f func(chan error), name string, max int) error {
+func (d *HardLimitDecorator) hardLimitFunc(f func() error, name string, max int) error {
 	v, _ := d.hardLock.LoadOrStore(name, make(chan struct{}, max))
-	ch := v.(chan struct{})
-	resCh := make(chan error, 1)
-
-	defer func() { <-ch }()
+	ch, _ := v.(chan struct{})
 
 	select {
 	case ch <- struct{}{}:
+		defer func() { <-ch }()
 	default:
+		// fix: you should not read from channel if you haven't sent to it.
 		return ErrorHardLimit
 	}
 
-	f(resCh)
-	return <-resCh
+	return f()
 }
 
-func (d *HardLimitDecorator) hardLimitFuncProduct(f func(chan productResult), name string, max int) (shop.Product, error) {
+func (d *HardLimitDecorator) hardLimitFuncProduct(f func() productResult, name string, max int) (shop.Product, error) {
 	v, _ := d.hardLock.LoadOrStore(name, make(chan struct{}, max))
 	ch := v.(chan struct{})
-	resCh := make(chan productResult, 1)
-
-	defer func() { <-ch }()
 
 	select {
 	case ch <- struct{}{}:
 	default:
+		defer func() { <-ch }()
+
 		return shop.Product{}, ErrorHardLimit
 	}
 
-	f(resCh)
-
-	res := <-resCh
+	res := f()
 	return res.prod, res.err
 }
 
-func (d *HardLimitDecorator) hardLimitFuncBytes(f func(chan bytesResult), name string, max int) ([]byte, error) {
+func (d *HardLimitDecorator) hardLimitFuncBytes(f func() bytesResult, name string, max int) ([]byte, error) {
 	v, _ := d.hardLock.LoadOrStore(name, make(chan struct{}, max))
 	ch := v.(chan struct{})
-	resCh := make(chan bytesResult, 1)
-
-	defer func() { <-ch }()
 
 	select {
 	case ch <- struct{}{}:
 	default:
+		defer func() { <-ch }()
 		return []byte{}, ErrorHardLimit
 	}
 
-	f(resCh)
-	res := <-resCh
+	res := f()
 	return res.bts, res.err
 }

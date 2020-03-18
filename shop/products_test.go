@@ -41,18 +41,24 @@ func TestModifyProductFailed(t *testing.T) {
 	}
 
 	tests := []productTest{
+		{testName: "NegativeProduct", Product: Product{Name: "Pineapple", Price: -10, Type: ProductNormal}, err: ErrorProductNegativePrice},
 		{testName: "FreeProduct", Product: Product{Name: "Pineapple", Price: 0, Type: ProductNormal}, err: ErrorProductNegativePrice},
 		{testName: "SampleWithPrice", Product: Product{Name: "Pineapple", Price: 100, Type: ProductSampled}, err: errors.New("sample not has price")},
 	}
 
-	testShop := NewMarket()
-	_ = testShop.AddProduct(Product{Name: "Pineapple", Price: 100, Type: ProductNormal})
-
 	for _, test := range tests {
+		test := test
+
 		t.Run(test.testName, func(t *testing.T) {
-			err := testShop.ModifyProduct(test.Product)
+			testShop := NewMarket()
+			err := testShop.AddProduct(Product{Name: "Pineapple", Price: 100, Type: ProductNormal})
+			if err != nil {
+				t.Errorf("Test it shouldn't be failed with error: get value %v(%v)", err, test.Product)
+			}
+
+			err = testShop.ModifyProduct(test.Product)
 			if err == nil {
-				t.Errorf("Test it should be failed with error: %v, but get value %v", test.err, test.Product)
+				t.Errorf("Test it should be failed with error: %v, but get value %v(%v)", test.err, err, test.Product)
 			} else if err.Error() != test.err.Error() && !errors.Is(err, test.err) {
 				t.Errorf("Values not equal: %v != %v", err, test.err)
 			}

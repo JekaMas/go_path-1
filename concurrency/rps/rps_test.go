@@ -1,27 +1,29 @@
 package rps
 
 import (
-	"go_path/struct"
 	"strconv"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/Kmortyk/go_path/shop"
 )
 
 func TestAddProductSoftLimit(t *testing.T) {
 
 	stub := LimitDecoratorStub{
 		addProductFunc: func(product shop.Product) error {
-			time.Sleep(time.Second * 5)
+			time.Sleep(time.Millisecond)
 			return nil
 		},
 	}
 
 	sd := NewSoftLimitDecorator(stub)
 	wg := sync.WaitGroup{}
-	wg.Add(2000)
+	const num = 2_000_000
+	wg.Add(num)
 
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < num/2; i++ {
 		go func() {
 			defer wg.Done()
 			err := sd.AddProduct(shop.Product{})
@@ -36,7 +38,7 @@ func TestAddProductSoftLimit(t *testing.T) {
 		return nil
 	}
 
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < num/2; i++ {
 		go func() {
 			defer wg.Done()
 			err := sd.AddProduct(shop.Product{})
@@ -54,7 +56,7 @@ func TestAddProductHardLimit(t *testing.T) {
 
 	stub := LimitDecoratorStub{
 		addProductFunc: func(product shop.Product) error {
-			time.Sleep(time.Second * 50)
+			time.Sleep(time.Millisecond)
 			return nil
 		},
 	}
@@ -63,15 +65,16 @@ func TestAddProductHardLimit(t *testing.T) {
 
 	var err error
 	wg := sync.WaitGroup{}
-	wg.Add(10000)
+	const num = 2_000_000
+	wg.Add(num)
 
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < num; i++ {
 		go func() {
 			defer wg.Done()
 			err = hd.AddProduct(shop.NewProduct("a"+strconv.Itoa(i), 1, shop.ProductNormal))
 		}()
 	}
-	time.Sleep(time.Second)
+	wg.Wait()
 
 	if err == nil {
 		t.Error("Hard limit pass")

@@ -2,7 +2,7 @@ package rps
 
 import (
 	"errors"
-	shop "go_path/struct"
+	"github.com/Kmortyk/go_path/shop"
 	"sync"
 )
 
@@ -11,8 +11,8 @@ type SoftLimitDecorator struct {
 	softLock sync.Map
 }
 
-func NewSoftLimitDecorator(s shop.Shop) SoftLimitDecorator {
-	return SoftLimitDecorator{
+func NewSoftLimitDecorator(s shop.Shop) *SoftLimitDecorator {
+	return &SoftLimitDecorator{
 		Shop:     s,
 		softLock: sync.Map{},
 	}

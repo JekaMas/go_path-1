@@ -1,7 +1,7 @@
 package time
 
 import (
-	shop "go_path/struct"
+	"github.com/Kmortyk/go_path/shop"
 	"math/rand"
 	"sync"
 	"testing"

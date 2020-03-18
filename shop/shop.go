@@ -29,8 +29,8 @@ type ImportAccountsError struct {
 	Err     error
 }
 
-func NewMarket() Market {
-	return Market{
+func NewMarket() *Market {
+	return &Market{
 		Accounts:    NewAccounts(),
 		Products:    NewProducts(),
 		Bundles:     NewBundles(),

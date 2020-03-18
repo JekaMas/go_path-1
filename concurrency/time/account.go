@@ -1,38 +1,38 @@
 package time
 
 import (
-	shop "go_path/struct"
+	"github.com/Kmortyk/go_path/shop"
 	"time"
 )
 
 func (td *TimeoutDecorator) Register(userName string) error {
 	return td.timeoutFunc(func(ch chan error) {
-		ch <- td.shop.Register(userName)
+		ch <- td.Shop.Register(userName)
 	}, time.Second)
 }
 
 func (td *TimeoutDecorator) AddBalance(userName string, sum float32) error {
 	return td.timeoutFunc(func(ch chan error) {
-		ch <- td.shop.AddBalance(userName, sum)
+		ch <- td.Shop.AddBalance(userName, sum)
 	}, time.Second)
 }
 
 func (td *TimeoutDecorator) ModifyAccountType(userName string, accountType shop.AccountType) error {
 	return td.timeoutFunc(func(ch chan error) {
-		ch <- td.shop.ModifyAccountType(userName, accountType)
+		ch <- td.Shop.ModifyAccountType(userName, accountType)
 	}, time.Second)
 }
 
 func (td *TimeoutDecorator) Balance(userName string) (float32, error) {
 	return td.timeoutFuncAmount(func(ch chan amountResult) {
-		sum, err := td.shop.Balance(userName)
+		sum, err := td.Shop.Balance(userName)
 		ch <- amountResult{sum, err}
 	}, time.Second)
 }
 
 func (td *TimeoutDecorator) GetAccounts(sortType shop.AccountSortType) []shop.Account {
 	return td.timeoutFuncAccounts(func(ch chan []shop.Account) {
-		ch <- td.shop.GetAccounts(sortType)
+		ch <- td.Shop.GetAccounts(sortType)
 	}, time.Second)
 }
 
@@ -40,13 +40,13 @@ func (td *TimeoutDecorator) GetAccounts(sortType shop.AccountSortType) []shop.Ac
 
 func (td *TimeoutDecorator) GetAccount(name string) (shop.Account, error) {
 	return td.timeoutFuncAccount(func(ch chan accountResult) {
-		acc, err := td.shop.GetAccount(name)
+		acc, err := td.Shop.GetAccount(name)
 		ch <- accountResult{acc, err}
 	}, time.Second)
 }
 
 func (td *TimeoutDecorator) SetAccount(userName string, account shop.Account) error {
 	return td.timeoutFunc(func(ch chan error) {
-		ch <- td.shop.SetAccount(userName, account)
+		ch <- td.Shop.SetAccount(userName, account)
 	}, time.Second)
 }
